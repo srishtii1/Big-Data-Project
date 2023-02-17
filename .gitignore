@@ -5,3 +5,4 @@ SingaporeWeather.csv
 *.exe
 __MACOSX
 data/
+*.o

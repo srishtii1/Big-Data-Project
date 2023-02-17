@@ -1,3 +1,4 @@
 "# CX4123_Project" 
 
-Run everything with g++ *.cpp -o main.exe
+g++ parse_query.cpp src/*.cpp  -o main.exe
+.\main.exe U1923502C
