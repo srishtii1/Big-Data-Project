@@ -17,7 +17,7 @@ Query parse_query(string matric_no)
     Query query;
     matric_no.pop_back();
     int last_digit = matric_no.back();
-    int second_last_digit = matric_no[8];
+    int second_last_digit = matric_no[7];
     query.year1 = 2000 + last_digit;
     query.year2 = 2010 + last_digit;
     if (second_last_digit % 2 == 0) {
