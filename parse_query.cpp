@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include<cstring>
 
 using namespace std;
 
@@ -28,8 +29,8 @@ Query parse_query(string matric_no)
     return query;
 }
 
-int main() {
-    Query query = parse_query("U1922129L");
-    printf(query.location, " %d %d", query.year1, query.year2);
-    return 0;
-}
+// int main() {
+//     Query query = parse_query("U1922129L");
+//     printf(query.location, " %d %d", query.year1, query.year2);
+//     return 0;
+// }

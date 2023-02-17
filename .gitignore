@@ -4,3 +4,4 @@ SingaporeWeather.csv
 .vscode
 *.exe
 __MACOSX
+data/
