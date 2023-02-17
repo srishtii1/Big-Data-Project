@@ -35,7 +35,7 @@ void read_csv(){
 
         ++counter;
 
-        while (getline(s, word, ',')) 
+        while (getline(s, word, ','))
         {
             row.push_back(word);
         }
@@ -81,11 +81,10 @@ void read_csv(){
         it->second->close();
     }
     
-    // return;
 }
 
-int main() 
-{
-    read_csv();
-    return 0;
-}
+// int main() 
+// {
+//     read_csv();
+//     return 0;
+// }

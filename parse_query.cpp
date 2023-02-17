@@ -4,29 +4,29 @@
 #include <string>
 #include <sstream>
 #include<cstring>
+#include <cassert> 
 
-using namespace std;
 
 struct Query {
     int year1;
     int year2;
-    char location[20];
+    bool city;
+
+    Query(int year, bool city) 
+    {
+        this->year1 = 2000 + year;
+        this->year2 = 2010 + year;
+        this->city = city;
+    }
 };
 
-Query parse_query(string matric_no)
+Query parse_query(std::string matric_no)
 {
-    Query query;
-    matric_no.pop_back();
-    int last_digit = matric_no.back();
-    int second_last_digit = matric_no[7];
-    query.year1 = 2000 + last_digit;
-    query.year2 = 2010 + last_digit;
-    if (second_last_digit % 2 == 0) {
-        strcpy(query.location, "Changi");
-    } else {
-        strcpy(query.location, "Paya Lebar");
-    }
-    return query;
+    int year = (int)(matric_no[matric_no.size() - 2]) - 48;
+
+    bool city = ((int)matric_no[matric_no.size() - 2] - 48) % 2;
+
+    return Query(year, city);
 }
 
 // int main() {
@@ -34,3 +34,14 @@ Query parse_query(string matric_no)
 //     printf(query.location, " %d %d", query.year1, query.year2);
 //     return 0;
 // }
+
+int main(int argc, char** argv) 
+{
+    assert (argc == 2);
+
+    std::string matriculation_number = argv[1];
+
+    Query query = parse_query(matriculation_number);
+
+    return 0;
+}
