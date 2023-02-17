@@ -1,17 +1,9 @@
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include<cstdio>
-#include<unordered_map>
+#include "preprocessing.hpp"
 
-#include "constants.hpp"
-
-
-void read_csv(){
+void preprocess_csv()
+{
     std::ifstream input_file;
-    input_file.open("data/SingaporeWeather.csv", std::ios::in);
+    input_file.open("../data/SingaporeWeather.csv", std::ios::in);
 
     std::unordered_map<std::string, std::ofstream*> file_map;
 
@@ -82,9 +74,3 @@ void read_csv(){
     }
     
 }
-
-// int main() 
-// {
-//     read_csv();
-//     return 0;
-// }
