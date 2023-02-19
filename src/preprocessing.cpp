@@ -4,7 +4,7 @@ void preprocess_csv()
 {
     std::ifstream input_file;
     input_file.open("../data/SingaporeWeather.csv", std::ios::in);
-
+    std::cout << "Opened file" << std::endl;
     std::unordered_map<std::string, std::ofstream*> file_map;
 
     for (auto it=FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
@@ -21,6 +21,7 @@ void preprocess_csv()
 
     while (input_file.good()) 
     {
+        std::cout << "File good!" << std::endl;
         row.clear();
         getline(input_file, line);
         std::stringstream s(line);
@@ -29,6 +30,7 @@ void preprocess_csv()
 
         while (getline(s, word, ','))
         {
+            std::cout << word << std::endl;
             row.push_back(word);
         }
 
@@ -46,9 +48,11 @@ void preprocess_csv()
         unsigned short minute = (unsigned short) std::stoi(timestamp.substr(14, 2));
 
         file_map["year"]->write((char *) &year, sizeof(ColumnSizeConstants::year));
+        std::cout << "Outputted year" << std::endl;
         file_map["month"]->write((char *) &month, sizeof(ColumnSizeConstants::month));
         file_map["day"]->write((char *) &day, sizeof(ColumnSizeConstants::day));
 
+        // encode the time of the day as one unsigned short instead of 2; since time is measured at the granularity of every 30 minutes
         unsigned short time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
 
         file_map["time"]->write((char *) &time, sizeof(ColumnSizeConstants::time));

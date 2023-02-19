@@ -6,3 +6,4 @@ SingaporeWeather.csv
 __MACOSX
 data/
 *.o
+run_cmd
