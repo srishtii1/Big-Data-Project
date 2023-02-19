@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     std::string matriculation_number = argv[1];
 
     Query query = parse_query(matriculation_number);
-
+    std::cout << "Query: " << query.year1 << " " << query.year2<<" "<<query.city << std::endl;
     preprocess_csv();
 
     return 0;

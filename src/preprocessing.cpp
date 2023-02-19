@@ -3,9 +3,23 @@
 void preprocess_csv()
 {
     std::ifstream input_file;
-    input_file.open("../data/SingaporeWeather.csv", std::ios::in);
+    
+    // float x[100];
+    // input_file.open("data/column_store/humidity_encoded.dat", std::ios::in | std::ios::binary);
+
+    // input_file.read((char*)&x, sizeof(float) * 100);
+
+    // for (int i=0; i<100; ++i)
+    // {
+    //     std::cout << x[i] << " ";
+    // }
+    // std::cout<<"\n";
+    // input_file.close();
+
+    input_file.open("data/SingaporeWeather.csv", std::ios::in);
 
     std::unordered_map<std::string, std::ofstream*> file_map;
+    
 
     for (auto it=FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
     {
@@ -45,26 +59,26 @@ void preprocess_csv()
         unsigned short hour = (unsigned short) std::stoi(timestamp.substr(11, 2));
         unsigned short minute = (unsigned short) std::stoi(timestamp.substr(14, 2));
 
-        file_map["year"]->write((char *) &year, sizeof(ColumnSizeConstants::year));
-        file_map["month"]->write((char *) &month, sizeof(ColumnSizeConstants::month));
-        file_map["day"]->write((char *) &day, sizeof(ColumnSizeConstants::day));
+        file_map["year"]->write((char *) &year, (ColumnSizeConstants::year));
+        file_map["month"]->write((char *) &month, (ColumnSizeConstants::month));
+        file_map["day"]->write((char *) &day, (ColumnSizeConstants::day));
 
         unsigned short time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
 
-        file_map["time"]->write((char *) &time, sizeof(ColumnSizeConstants::time));
+        file_map["time"]->write((char *) &time, (ColumnSizeConstants::time));
 
         // Process Station
         auto station = row[2];
         bool station_encoded = station == "Changi" ? false : true;
-        file_map["city"]->write((char *) &station_encoded, sizeof(ColumnSizeConstants::city));
+        file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
 
         // Process Temperature
         float temperature = std::stof(row[3]);
-        file_map["temperature"]->write((char *) &temperature, sizeof(ColumnSizeConstants::temperature));
+        file_map["temperature"]->write((char *) &temperature, (ColumnSizeConstants::temperature));
 
         // Process Humidity
         float humidity = std::stof(row[3]);
-        file_map["humidity"]->write((char *) &humidity, sizeof(ColumnSizeConstants::humidity));
+        file_map["humidity"]->write((char *) &humidity, (ColumnSizeConstants::humidity));
 
     }
 
@@ -72,5 +86,7 @@ void preprocess_csv()
     {
         it->second->close();
     }
+
+    input_file.close();
     
 }
