@@ -52,18 +52,18 @@ void preprocess_csv()
         auto timestamp = row[1];
         // YYYY-MM-DD HH:MM
         // TODO: Discuss whether to use stringstream for this
-        unsigned short year = (unsigned short) std::stoi(timestamp.substr(0, 4));
-        unsigned short month = (unsigned short) std::stoi(timestamp.substr(5, 2));
-        unsigned short day = (unsigned short) std::stoi(timestamp.substr(8, 2));
+        __int8 year = (__int8) std::stoi(timestamp.substr(0, 4));
+        __int8 month = (__int8) std::stoi(timestamp.substr(5, 2));
+        __int8 day = (__int8) std::stoi(timestamp.substr(8, 2));
 
-        unsigned short hour = (unsigned short) std::stoi(timestamp.substr(11, 2));
-        unsigned short minute = (unsigned short) std::stoi(timestamp.substr(14, 2));
+        __int8 hour = (__int8) std::stoi(timestamp.substr(11, 2));
+        __int8 minute = (__int8) std::stoi(timestamp.substr(14, 2));
 
         file_map["year"]->write((char *) &year, (ColumnSizeConstants::year));
         file_map["month"]->write((char *) &month, (ColumnSizeConstants::month));
         file_map["day"]->write((char *) &day, (ColumnSizeConstants::day));
 
-        unsigned short time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
+        __int8 time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
 
         file_map["time"]->write((char *) &time, (ColumnSizeConstants::time));
 

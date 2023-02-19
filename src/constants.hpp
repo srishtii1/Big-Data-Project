@@ -29,13 +29,13 @@ namespace FileNameConstants
 
 namespace ColumnSizeConstants
 {
-    const int year = sizeof(unsigned short int);
-    const int month = sizeof(unsigned short int);
-    const int day = sizeof(unsigned short int);
+    const int year = sizeof(__int8);
+    const int month = sizeof(__int8);
+    const int day = sizeof(__int8);
 
     const int city = sizeof(bool);
 
-    const int time = sizeof(unsigned short int);
+    const int time = sizeof(__int8);
     const int temperature = sizeof(float);
     const int humidity = sizeof(float);
 }
