@@ -35,7 +35,6 @@ void preprocess_csv()
 
     while (input_file.good()) 
     {
-        std::cout << "File good!" << std::endl;
         row.clear();
         getline(input_file, line);
         std::stringstream s(line);
@@ -80,7 +79,7 @@ void preprocess_csv()
         file_map["temperature"]->write((char *) &temperature, (ColumnSizeConstants::temperature));
 
         // Process Humidity
-        float humidity = std::stof(row[3]);
+        float humidity = std::stof(row[4]);
         file_map["humidity"]->write((char *) &humidity, (ColumnSizeConstants::humidity));
 
     }
