@@ -1,24 +1,84 @@
 #include "preprocessing.hpp"
+#include <vector>
+
+
+// Group into 8s if x.size() % 8 != 0
+void binary_write(std::ofstream& fout, std::vector<bool>& x)
+{
+    while (x.size() < 8) x.push_back(0); // Make it size of 1 byte
+
+    std::vector<bool>::size_type n = x.size();
+
+    uint8_t code = 0;
+    for(uint8_t mask = 1, i=0; mask > 0 && i < n; ++i, mask <<= 1)
+        if(x.at(i))
+            code |= mask;
+    fout.write((const char*)&code, sizeof(uint8_t));
+}
+
+std::vector<bool> binary_read(std::ifstream& fin, int num_bytes) 
+{
+
+    std::vector<bool> values;
+
+    uint8_t nums[num_bytes];
+
+    fin.read((char*) &nums, num_bytes * sizeof(nums[0]));
+
+    for (int idx=0; idx<num_bytes; ++idx)
+    {
+        std::vector<bool> x(8, false);
+        for(uint8_t mask = 1, i=0; mask > 0 && i < 8; ++i, mask <<= 1)
+            x.at(i) = nums[idx] & mask;
+
+        for (int i=0; i<x.size(); ++i)
+        {
+            values.push_back(x[i]);
+        }
+        
+    }
+
+    return values;
+
+}
+
 
 void preprocess_csv()
 {
     std::ifstream input_file;
+
+    std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
+
+    input_file.open("data/column_store/city_encoded.dat", std::ios::binary);
+    std::vector<bool> x = binary_read(input_file, 1012);
+    std::cout << x.size() <<'\n';
+
+    for (int i=0; i<x.size(); ++i)
+    {
+        std::cout<<x[i];
+    }
+    std::cout<<'\n';
+    input_file.close();
+    // return;
     
-    // float x[100];
+    // float f[100];
     // input_file.open("data/column_store/humidity_encoded.dat", std::ios::in | std::ios::binary);
 
-    // input_file.read((char*)&x, sizeof(float) * 100);
+    // input_file.read((char*)&f, sizeof(float) * 100);
 
     // for (int i=0; i<100; ++i)
     // {
-    //     std::cout << x[i] << " ";
+    //     std::cout << f[i] << " ";
     // }
-    // std::cout<<"\n";
-    // input_file.close();
+    std::cout<<"\n";
+    input_file.close();
 
     input_file.open("data/SingaporeWeather.csv", std::ios::in);
 
     std::unordered_map<std::string, std::ofstream*> file_map;
+
+    std::vector<bool> city_compact;
+    int vec_size = 0;
     
 
     for (auto it=FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
@@ -48,6 +108,10 @@ void preprocess_csv()
 
         if (counter <= 1) continue; // Skip header
 
+        if (row[3] == "M" && row[4] != "M") std::cout << counter << '\n';
+        if (row[4] == "M" && row[3] != "M") std::cout << counter << '\n';
+        if (row[3] == "M" || row[4] == "M") continue; // Missing values
+
         // Process Timestamp
         auto timestamp = row[1];
         // YYYY-MM-DD HH:MM
@@ -70,16 +134,34 @@ void preprocess_csv()
         // Process Station
         auto station = row[2];
         bool station_encoded = station == "Changi" ? false : true;
-        file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
+        //file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
+
+        city_compact.push_back(station_encoded);
+        ++vec_size;
+
+        if (vec_size == 8) 
+        {
+            binary_write(*file_map["city"], city_compact);
+            city_compact.clear();
+            vec_size = 0;
+        }
 
         // Process Temperature
         float temperature = std::stof(row[3]);
         file_map["temperature"]->write((char *) &temperature, (ColumnSizeConstants::temperature));
 
         // Process Humidity
-        float humidity = std::stof(row[3]);
+        float humidity = std::stof(row[4]);
         file_map["humidity"]->write((char *) &humidity, (ColumnSizeConstants::humidity));
 
+    }
+
+    // final write
+    if (vec_size != 0) 
+    {
+        binary_write(*file_map["city"], city_compact);
+        city_compact.clear();
+        vec_size = 0;
     }
 
     for (auto it=file_map.begin(); it != file_map.end(); ++it)
