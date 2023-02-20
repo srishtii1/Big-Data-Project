@@ -21,13 +21,21 @@ Query parse_query(std::string matric_no)
 
 int main(int argc, char** argv) 
 {
-    assert (argc == 2);
+    try
+    {
+        assert (argc == 2);
 
-    std::string matriculation_number = argv[1];
+        std::string matriculation_number = argv[1];
 
-    Query query = parse_query(matriculation_number);
-    std::cout << "Query: " << query.year1 << " " << query.year2<<" "<<query.city << std::endl;
-    preprocess_csv();
+        Query query = parse_query(matriculation_number);
+        std::cout << "Query: " << query.year1 << " " << query.year2<<" "<<query.city << std::endl;
+        preprocess_csv();
 
+    }
+    
+    catch (const std::exception &exc)
+    {
+        std::cerr << "Exception " << exc.what();
+    }
     return 0;
 }
