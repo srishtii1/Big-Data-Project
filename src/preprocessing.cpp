@@ -1,5 +1,6 @@
 #include "preprocessing.hpp"
 #include <vector>
+#include <sys/stat.h>
 
 // Group into 8s if x.size() % 8 != 0
 void binary_write(std::ofstream &fout, std::vector<bool> &x)
@@ -40,113 +41,135 @@ std::vector<bool> binary_read(std::ifstream &fin, int num_bytes)
     return values;
 }
 
-void preprocess_csv()
+bool check_if_col_store_exists()
 {
-    std::ifstream input_file;
-
-    std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
-
-    input_file.open("data/SingaporeWeather.csv", std::ios::in);
-
-    std::unordered_map<std::string, std::ofstream *> file_map;
-
-    std::vector<bool> city_compact;
-    int vec_size = 0;
-
+    // will fail if two programs access file simultanouesly; ideally shouldn't occur in this case
+    bool exists = true;
     for (auto it = FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
     {
-        std::ofstream *output_file = new std::ofstream("data/column_store/" + it->second, std::ios::out | std::ios::binary);
-        file_map[it->first] = output_file;
+        std::ifstream input_file("data/column_store/" + it->second, std::ios::binary);
+        exists = exists && input_file.good();
     }
+    return exists;
+}
 
-    std::vector<std::string> row;
+void preprocess_csv()
+{
+    bool exists = check_if_col_store_exists();
 
-    std::string line, word;
+    std::ifstream input_file;
 
-    int counter = 0;
-
-    while (input_file.good())
+    if (!exists)
     {
-        row.clear();
-        getline(input_file, line);
-        std::stringstream s(line);
 
-        ++counter;
+        std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
 
-        while (getline(s, word, ','))
+        input_file.open("data/SingaporeWeather.csv", std::ios::in);
+
+        std::unordered_map<std::string, std::ofstream *> file_map;
+
+        std::vector<bool> city_compact;
+        int vec_size = 0;
+
+        for (auto it = FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
         {
-            // std::cout << word << std::endl;
-            row.push_back(word);
+            std::ofstream *output_file = new std::ofstream("data/column_store/" + it->second, std::ios::out | std::ios::binary);
+            file_map[it->first] = output_file;
         }
 
-        if (counter <= 1)
-            continue; // Skip header
+        std::vector<std::string> row;
 
-        if (row[3] == "M" && row[4] != "M")
-            std::cout << counter << '\n';
-        if (row[4] == "M" && row[3] != "M")
-            std::cout << counter << '\n';
-        if (row[3] == "M" || row[4] == "M")
-            continue; // Missing values
+        std::string line, word;
 
-        // Process Timestamp
-        auto timestamp = row[1];
-        // YYYY-MM-DD HH:MM
-        // TODO: Discuss whether to use stringstream for this
-        __int8 year = (__int8)std::stoi(timestamp.substr(0, 4));
-        __int8 month = (__int8)std::stoi(timestamp.substr(5, 2));
-        __int8 day = (__int8)std::stoi(timestamp.substr(8, 2));
+        int counter = 0;
 
-        __int8 hour = (__int8)std::stoi(timestamp.substr(11, 2));
-        __int8 minute = (__int8)std::stoi(timestamp.substr(14, 2));
+        while (input_file.good())
+        {
+            row.clear();
+            getline(input_file, line);
+            std::stringstream s(line);
 
-        file_map["year"]->write((char *)&year, (ColumnSizeConstants::year));
-        file_map["month"]->write((char *)&month, (ColumnSizeConstants::month));
-        file_map["day"]->write((char *)&day, (ColumnSizeConstants::day));
+            ++counter;
 
-        // encode the time of the day as one unsigned short instead of 2; since time is measured at the granularity of every 30 minutes
-        __int8 time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
+            while (getline(s, word, ','))
+            {
+                // std::cout << word << std::endl;
+                row.push_back(word);
+            }
 
-        file_map["time"]->write((char *)&time, (ColumnSizeConstants::time));
+            if (counter <= 1)
+                continue; // Skip header
 
-        // Process Station
-        auto station = row[2];
-        bool station_encoded = station == "Changi" ? false : true;
-        // file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
+            if (row[3] == "M" && row[4] != "M")
+                std::cout << counter << '\n';
+            if (row[4] == "M" && row[3] != "M")
+                std::cout << counter << '\n';
+            if (row[3] == "M" || row[4] == "M")
+                continue; // Missing values
 
-        city_compact.push_back(station_encoded);
-        ++vec_size;
+            // Process Timestamp
+            auto timestamp = row[1];
+            // YYYY-MM-DD HH:MM
+            // TODO: Discuss whether to use stringstream for this
+            __int8 year = (__int8)std::stoi(timestamp.substr(0, 4));
+            __int8 month = (__int8)std::stoi(timestamp.substr(5, 2));
+            __int8 day = (__int8)std::stoi(timestamp.substr(8, 2));
 
-        if (vec_size == 8)
+            __int8 hour = (__int8)std::stoi(timestamp.substr(11, 2));
+            __int8 minute = (__int8)std::stoi(timestamp.substr(14, 2));
+
+            file_map["year"]->write((char *)&year, (ColumnSizeConstants::year));
+            file_map["month"]->write((char *)&month, (ColumnSizeConstants::month));
+            file_map["day"]->write((char *)&day, (ColumnSizeConstants::day));
+
+            // encode the time of the day as one unsigned short instead of 2; since time is measured at the granularity of every 30 minutes
+            __int8 time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
+
+            file_map["time"]->write((char *)&time, (ColumnSizeConstants::time));
+
+            // Process Station
+            auto station = row[2];
+            bool station_encoded = station == "Changi" ? false : true;
+            // file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
+
+            city_compact.push_back(station_encoded);
+            ++vec_size;
+
+            if (vec_size == 8)
+            {
+                binary_write(*file_map["city"], city_compact);
+                city_compact.clear();
+                vec_size = 0;
+            }
+
+            // Process Temperature
+            float temperature = std::stof(row[3]);
+            file_map["temperature"]->write((char *)&temperature, (ColumnSizeConstants::temperature));
+
+            // Process Humidity
+            float humidity = std::stof(row[4]);
+            file_map["humidity"]->write((char *)&humidity, (ColumnSizeConstants::humidity));
+        }
+
+        // final write
+        if (vec_size != 0)
         {
             binary_write(*file_map["city"], city_compact);
             city_compact.clear();
             vec_size = 0;
         }
 
-        // Process Temperature
-        float temperature = std::stof(row[3]);
-        file_map["temperature"]->write((char *)&temperature, (ColumnSizeConstants::temperature));
+        for (auto it = file_map.begin(); it != file_map.end(); ++it)
+        {
+            it->second->close();
+        }
 
-        // Process Humidity
-        float humidity = std::stof(row[4]);
-        file_map["humidity"]->write((char *)&humidity, (ColumnSizeConstants::humidity));
+        input_file.close();
     }
-
-    // final write
-    if (vec_size != 0)
+    else
     {
-        binary_write(*file_map["city"], city_compact);
-        city_compact.clear();
-        vec_size = 0;
+        std::cout << "Using existing column store!" << std::endl;
     }
-
-    for (auto it = file_map.begin(); it != file_map.end(); ++it)
-    {
-        it->second->close();
-    }
-
-    input_file.close();
 
     std::cout << "Sanity check for Locations:" << std::endl;
 
