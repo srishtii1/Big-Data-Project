@@ -1,47 +1,44 @@
 #include "preprocessing.hpp"
 #include <vector>
 
-
 // Group into 8s if x.size() % 8 != 0
-void binary_write(std::ofstream& fout, std::vector<bool>& x)
+void binary_write(std::ofstream &fout, std::vector<bool> &x)
 {
-    while (x.size() < 8) x.push_back(0); // Make it size of 1 byte
+    while (x.size() < 8)
+        x.push_back(0); // Make it size of 1 byte
 
     std::vector<bool>::size_type n = x.size();
 
     uint8_t code = 0;
-    for(uint8_t mask = 1, i=0; mask > 0 && i < n; ++i, mask <<= 1)
-        if(x.at(i))
+    for (uint8_t mask = 1, i = 0; mask > 0 && i < n; ++i, mask <<= 1)
+        if (x.at(i))
             code |= mask;
-    fout.write((const char*)&code, sizeof(uint8_t));
+    fout.write((const char *)&code, sizeof(uint8_t));
 }
 
-std::vector<bool> binary_read(std::ifstream& fin, int num_bytes) 
+std::vector<bool> binary_read(std::ifstream &fin, int num_bytes)
 {
 
     std::vector<bool> values;
 
     uint8_t nums[num_bytes];
 
-    fin.read((char*) &nums, num_bytes * sizeof(nums[0]));
+    fin.read((char *)&nums, num_bytes * sizeof(nums[0]));
 
-    for (int idx=0; idx<num_bytes; ++idx)
+    for (int idx = 0; idx < num_bytes; ++idx)
     {
         std::vector<bool> x(8, false);
-        for(uint8_t mask = 1, i=0; mask > 0 && i < 8; ++i, mask <<= 1)
+        for (uint8_t mask = 1, i = 0; mask > 0 && i < 8; ++i, mask <<= 1)
             x.at(i) = nums[idx] & mask;
 
-        for (int i=0; i<x.size(); ++i)
+        for (int i = 0; i < x.size(); ++i)
         {
             values.push_back(x[i]);
         }
-        
     }
 
     return values;
-
 }
-
 
 void preprocess_csv()
 {
@@ -49,51 +46,26 @@ void preprocess_csv()
 
     std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
 
-    input_file.open("data/column_store/city_encoded.dat", std::ios::binary);
-    std::vector<bool> x = binary_read(input_file, 1012);
-    std::cout << x.size() <<'\n';
-
-    for (int i=0; i<x.size(); ++i)
-    {
-        std::cout<<x[i];
-    }
-    std::cout<<'\n';
-    input_file.close();
-    // return;
-    
-    // float f[100];
-    // input_file.open("data/column_store/humidity_encoded.dat", std::ios::in | std::ios::binary);
-
-    // input_file.read((char*)&f, sizeof(float) * 100);
-
-    // for (int i=0; i<100; ++i)
-    // {
-    //     std::cout << f[i] << " ";
-    // }
-    std::cout<<"\n";
-    input_file.close();
-
     input_file.open("data/SingaporeWeather.csv", std::ios::in);
 
-    std::unordered_map<std::string, std::ofstream*> file_map;
+    std::unordered_map<std::string, std::ofstream *> file_map;
 
     std::vector<bool> city_compact;
     int vec_size = 0;
-    
 
-    for (auto it=FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
+    for (auto it = FileNameConstants::file_names.begin(); it != FileNameConstants::file_names.end(); ++it)
     {
-        std::ofstream* output_file = new std::ofstream("data/column_store/" + it->second, std::ios::out | std::ios::binary);
+        std::ofstream *output_file = new std::ofstream("data/column_store/" + it->second, std::ios::out | std::ios::binary);
         file_map[it->first] = output_file;
     }
 
     std::vector<std::string> row;
 
     std::string line, word;
-    
+
     int counter = 0;
 
-    while (input_file.good()) 
+    while (input_file.good())
     {
         row.clear();
         getline(input_file, line);
@@ -103,45 +75,49 @@ void preprocess_csv()
 
         while (getline(s, word, ','))
         {
-            std::cout << word << std::endl;
+            // std::cout << word << std::endl;
             row.push_back(word);
         }
 
-        if (counter <= 1) continue; // Skip header
+        if (counter <= 1)
+            continue; // Skip header
 
-        if (row[3] == "M" && row[4] != "M") std::cout << counter << '\n';
-        if (row[4] == "M" && row[3] != "M") std::cout << counter << '\n';
-        if (row[3] == "M" || row[4] == "M") continue; // Missing values
+        if (row[3] == "M" && row[4] != "M")
+            std::cout << counter << '\n';
+        if (row[4] == "M" && row[3] != "M")
+            std::cout << counter << '\n';
+        if (row[3] == "M" || row[4] == "M")
+            continue; // Missing values
 
         // Process Timestamp
         auto timestamp = row[1];
         // YYYY-MM-DD HH:MM
         // TODO: Discuss whether to use stringstream for this
-        __int8 year = (__int8) std::stoi(timestamp.substr(0, 4));
-        __int8 month = (__int8) std::stoi(timestamp.substr(5, 2));
-        __int8 day = (__int8) std::stoi(timestamp.substr(8, 2));
+        __int8 year = (__int8)std::stoi(timestamp.substr(0, 4));
+        __int8 month = (__int8)std::stoi(timestamp.substr(5, 2));
+        __int8 day = (__int8)std::stoi(timestamp.substr(8, 2));
 
-        __int8 hour = (__int8) std::stoi(timestamp.substr(11, 2));
-        __int8 minute = (__int8) std::stoi(timestamp.substr(14, 2));
+        __int8 hour = (__int8)std::stoi(timestamp.substr(11, 2));
+        __int8 minute = (__int8)std::stoi(timestamp.substr(14, 2));
 
-        file_map["year"]->write((char *) &year, (ColumnSizeConstants::year));
-        file_map["month"]->write((char *) &month, (ColumnSizeConstants::month));
-        file_map["day"]->write((char *) &day, (ColumnSizeConstants::day));
+        file_map["year"]->write((char *)&year, (ColumnSizeConstants::year));
+        file_map["month"]->write((char *)&month, (ColumnSizeConstants::month));
+        file_map["day"]->write((char *)&day, (ColumnSizeConstants::day));
 
         // encode the time of the day as one unsigned short instead of 2; since time is measured at the granularity of every 30 minutes
         __int8 time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
 
-        file_map["time"]->write((char *) &time, (ColumnSizeConstants::time));
+        file_map["time"]->write((char *)&time, (ColumnSizeConstants::time));
 
         // Process Station
         auto station = row[2];
         bool station_encoded = station == "Changi" ? false : true;
-        //file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
+        // file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
 
         city_compact.push_back(station_encoded);
         ++vec_size;
 
-        if (vec_size == 8) 
+        if (vec_size == 8)
         {
             binary_write(*file_map["city"], city_compact);
             city_compact.clear();
@@ -150,27 +126,51 @@ void preprocess_csv()
 
         // Process Temperature
         float temperature = std::stof(row[3]);
-        file_map["temperature"]->write((char *) &temperature, (ColumnSizeConstants::temperature));
+        file_map["temperature"]->write((char *)&temperature, (ColumnSizeConstants::temperature));
 
         // Process Humidity
         float humidity = std::stof(row[4]);
-        file_map["humidity"]->write((char *) &humidity, (ColumnSizeConstants::humidity));
-
+        file_map["humidity"]->write((char *)&humidity, (ColumnSizeConstants::humidity));
     }
 
     // final write
-    if (vec_size != 0) 
+    if (vec_size != 0)
     {
         binary_write(*file_map["city"], city_compact);
         city_compact.clear();
         vec_size = 0;
     }
 
-    for (auto it=file_map.begin(); it != file_map.end(); ++it)
+    for (auto it = file_map.begin(); it != file_map.end(); ++it)
     {
         it->second->close();
     }
 
     input_file.close();
-    
+
+    std::cout << "Sanity check for Locations:" << std::endl;
+
+    input_file.open("data/column_store/city_encoded.dat", std::ios::binary);
+    std::vector<bool> x = binary_read(input_file, 1012);
+    std::cout << x.size() << '\n';
+
+    for (int i = 0; i < x.size(); ++i)
+    {
+        std::cout << x[i];
+    }
+    std::cout << '\n';
+    input_file.close();
+    // return;
+
+    // float f[100];
+    // input_file.open("data/column_store/humidity_encoded.dat", std::ios::in | std::ios::binary);
+
+    // input_file.read((char*)&f, sizeof(float) * 100);
+
+    // for (int i=0; i<100; ++i)
+    // {
+    //     std::cout << f[i] << " ";
+    // }
+    std::cout << "\n";
+    input_file.close();
 }
