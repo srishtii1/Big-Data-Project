@@ -1,8 +1,10 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#include<string>
-#include<unordered_map>
+#include <string>
+#include <unordered_map>
+#include <map>
+#include <any>
 
 namespace FileNameConstants
 {
@@ -14,36 +16,47 @@ namespace FileNameConstants
     const std::string temperature = "temperature_encoded.dat";
     const std::string humidity = "humidity_encoded.dat";
 
-    const std::unordered_map<std::string, std::string> file_names = 
-    {
-        {"year", year},
-        {"month", month},
-        {"day", day}, 
-        {"city", city}, 
-        {"time", time}, 
-        {"temperature", temperature}, 
-        {"humidity", humidity}
-    };
+    const std::unordered_map<std::string, std::string> file_names =
+        {
+            {"year", year},
+            {"month", month},
+            {"day", day},
+            {"city", city},
+            {"time", time},
+            {"temperature", temperature},
+            {"humidity", humidity}};
 
+}
+
+namespace ColumnTypeConstants
+{
+    typedef __int8 year;
+    typedef __int8 month;
+    typedef __int8 day;
+
+    typedef bool city;
+
+    typedef __int8 time;
+    typedef float temperature;
+    typedef float humidity;
 }
 
 namespace ColumnSizeConstants
 {
-    const int year = sizeof(__int8);
-    const int month = sizeof(__int8);
-    const int day = sizeof(__int8);
+    const int year = sizeof(ColumnTypeConstants::year);
+    const int month = sizeof(ColumnTypeConstants::month);
+    const int day = sizeof(ColumnTypeConstants::day);
 
-    const int city = sizeof(bool);
+    const int city = sizeof(ColumnTypeConstants::city);
 
-    const int time = sizeof(__int8);
-    const int temperature = sizeof(float);
-    const int humidity = sizeof(float);
+    const int time = sizeof(ColumnTypeConstants::time);
+    const int temperature = sizeof(ColumnTypeConstants::temperature);
+    const int humidity = sizeof(ColumnTypeConstants::humidity);
 }
 
 namespace ProgramConstants
 {
     const int num_columns = 476922;
 }
-
 
 #endif

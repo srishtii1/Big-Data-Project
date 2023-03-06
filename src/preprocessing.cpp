@@ -1,6 +1,4 @@
 #include "preprocessing.hpp"
-#include <vector>
-#include <sys/stat.h>
 
 // Group into 8s if x.size() % 8 != 0
 void binary_write(std::ofstream &fout, std::vector<bool> &x)
