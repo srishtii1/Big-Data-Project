@@ -6,8 +6,10 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include<cstdio>
-#include<unordered_map>
+#include <cstdio>
+#include <unordered_map>
+#include <iomanip>
+#include <locale>
 
 #include "constants.hpp"
 

@@ -57,7 +57,8 @@ void preprocess_csv()
 
     std::ifstream input_file;
 
-    if (!exists)
+    // if (!exists)
+    if (true)
     {
 
         std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
@@ -122,6 +123,21 @@ void preprocess_csv()
 
             // encode the time of the day as one unsigned short instead of 2; since time is measured at the granularity of every 30 minutes
             __int8 time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
+
+            std::tm time_struct = {};
+            std::istringstream ss(timestamp);
+
+            if (ss >> std::get_time(&time_struct, "%Y-%m-%d %H:%M"))
+            {
+                // std::cout << std::put_time(&time_struct, "%c") << "\n"
+                // << std::mktime(&time_struct) << "\n";
+                time_t raw_timestamp = std::mktime(&time_struct);
+                file_map["raw_timestamp"]->write((char *)&raw_timestamp, (ColumnSizeConstants::raw_timestamp));
+            }
+            else
+            {
+                std::cout << "Parse failed\n";
+            }
 
             file_map["time"]->write((char *)&time, (ColumnSizeConstants::time));
 

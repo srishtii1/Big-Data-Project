@@ -29,15 +29,17 @@ int main(int argc, char **argv)
 
         Query query = parse_query(matriculation_number);
         std::cout << "Query: " << query.year1 << " " << query.year2 << " " << query.city << std::endl;
-        // preprocess_csv();
-        int block_size = 8;
-        int start_pos = 191528;
+        preprocess_csv();
+        int block_size = 64;
+        int start_pos = 0;
 
         Block<ColumnTypeConstants::year> year_block(block_size);
         Block<ColumnTypeConstants::month> month_block(block_size);
         Block<ColumnTypeConstants::day> day_block(block_size);
 
         Block<ColumnTypeConstants::time> time_block(block_size);
+
+        Block<ColumnTypeConstants::raw_timestamp> raw_timestamp_block(block_size);
 
         Block<ColumnTypeConstants::city> city_block(block_size);
 
@@ -69,6 +71,11 @@ int main(int argc, char **argv)
             {
                 time_block.read_data(fin, start_pos);
                 time_block.print_data();
+            }
+            else if (it->second == "raw_timestamp_encoded.dat")
+            {
+                raw_timestamp_block.read_data(fin, start_pos);
+                raw_timestamp_block.print_data();
             }
             else if (it->second == "city_encoded.dat")
             {
