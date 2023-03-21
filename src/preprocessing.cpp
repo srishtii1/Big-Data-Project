@@ -57,8 +57,8 @@ void preprocess_csv()
 
     std::ifstream input_file;
 
-    // if (!exists)
-    if (true)
+    if (!exists)
+    // if (true)
     {
 
         std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
@@ -99,20 +99,25 @@ void preprocess_csv()
             if (counter <= 1)
                 continue; // Skip header
 
-            if (row[3] == "M" && row[4] != "M")
-                std::cout << counter << '\n';
-            if (row[4] == "M" && row[3] != "M")
-                std::cout << counter << '\n';
-            if (row[3] == "M" || row[4] == "M")
-                continue; // Missing values
+            // if (row[3] == "M" && row[4] != "M")
+            //     std::cout << counter << '\n';
+            // if (row[4] == "M" && row[3] != "M")
+            //     std::cout << counter << '\n';
+            // if (row[3] == "M" || row[4] == "M")
+            //     continue; // Missing values
+
+            if (row[3] == "M")
+                row[3] = "-1.00";
+            if (row[4] == "M")
+                row[4] = "-1.00";
 
             // Process Timestamp
             auto timestamp = row[1];
             // YYYY-MM-DD HH:MM
             // TODO: Discuss whether to use stringstream for this
-            __int8 year = (__int8)std::stoi(timestamp.substr(0, 4));
-            __int8 month = (__int8)std::stoi(timestamp.substr(5, 2));
-            __int8 day = (__int8)std::stoi(timestamp.substr(8, 2));
+            ColumnTypeConstants::year year = (ColumnTypeConstants::year)std::stoi(timestamp.substr(0, 4));
+            ColumnTypeConstants::month month = (ColumnTypeConstants::month)std::stoi(timestamp.substr(5, 2));
+            ColumnTypeConstants::day day = (ColumnTypeConstants::day)std::stoi(timestamp.substr(8, 2));
 
             __int8 hour = (__int8)std::stoi(timestamp.substr(11, 2));
             __int8 minute = (__int8)std::stoi(timestamp.substr(14, 2));
@@ -122,7 +127,7 @@ void preprocess_csv()
             file_map["day"]->write((char *)&day, (ColumnSizeConstants::day));
 
             // encode the time of the day as one unsigned short instead of 2; since time is measured at the granularity of every 30 minutes
-            __int8 time = (minute == 30) ? 2 * hour + 1 : 2 * hour;
+            ColumnTypeConstants::time time = (hour * 60) + minute;
 
             std::tm time_struct = {};
             std::istringstream ss(timestamp);
@@ -185,18 +190,18 @@ void preprocess_csv()
         std::cout << "Using existing column store!" << std::endl;
     }
 
-    std::cout << "Sanity check for Locations:" << std::endl;
+    // std::cout << "Sanity check for Locations:" << std::endl;
 
-    input_file.open("data/column_store/city_encoded.dat", std::ios::binary);
-    std::vector<bool> x = binary_read(input_file, 1012);
-    std::cout << x.size() << '\n';
+    // input_file.open("data/column_store/city_encoded.dat", std::ios::binary);
+    // std::vector<bool> x = binary_read(input_file, 1012);
+    // std::cout << x.size() << '\n';
 
-    for (int i = 0; i < x.size(); ++i)
-    {
-        std::cout << x[i];
-    }
-    std::cout << '\n';
-    input_file.close();
+    // for (int i = 0; i < x.size(); ++i)
+    // {
+    //     std::cout << x[i];
+    // }
+    // std::cout << '\n';
+    // input_file.close();
     // return;
 
     // float f[100];

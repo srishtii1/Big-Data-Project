@@ -9,6 +9,7 @@ template <typename T>
 class Block
 /**
  * Block class which is agnostic to the type of data it will store; it is simply storing a fixed amount of data.
+ * The interface will accept a target position (row number in the table) where it must read data, then read from/write to the target block where the data is present.
  */
 {
 private:
@@ -20,7 +21,8 @@ public:
      * https://stackoverflow.com/a/14914168/17022186
      */
     Block(int block_size);
-    void read_data(std::ifstream &fin, int start_pos);
+    void read_data(std::ifstream &fin, int target_pos);
+    void print_value(T ele);
     void write_data(std::ofstream &fout, int start_pos);
     void print_data();
 };
@@ -32,51 +34,61 @@ Block<T>::Block(int block_size)
     this->block_data.resize(this->block_size / sizeof(T));
 }
 
-template <typename T>
-void Block<T>::read_data(std::ifstream &fin, int start_pos)
+template <>
+Block<bool>::Block(int block_size)
 {
-    std::cout << "About to read" << std::endl;
-    start_pos = start_pos * sizeof(T); // so that we can seek to that number of bytes
-    fin.seekg(start_pos);
+    this->block_size = block_size;
+    this->block_data.resize(this->block_size * 8);
+}
+
+template <typename T>
+void Block<T>::read_data(std::ifstream &fin, int target_pos)
+{
+    // std::cout << "Incoming target pos: " << target_pos << std::endl;
+    // std::cout << "Data type size: " << sizeof(T) << std::endl;
+    // std::cout << "Block size: " << this->block_size << std::endl;
+    int bytes_offset = target_pos * sizeof(T);
+    int block_offset = (bytes_offset % this->block_size) / sizeof(T);
+    int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
+    // std::cout << "Bytes offset: " << bytes_offset << std::endl;
+    // std::cout << "Start of target block: " << start_of_block << std::endl;
+    // std::cout << "Block offset: " << block_offset << std::endl;
+    fin.seekg(start_of_block);
     fin.read(reinterpret_cast<char *>(this->block_data.data()), this->block_size);
-    std::cout << "Done reading" << std::endl;
-    std::cout << this->block_data.size() << std::endl;
+    // std::cout << "Block length: " << this->block_data.size() << std::endl;
+    this->print_value(this->block_data.at(block_offset));
     return;
 }
 
 template <>
-void Block<bool>::read_data(std::ifstream &fin, int start_pos)
+void Block<bool>::read_data(std::ifstream &fin, int target_pos)
 {
-    std::cout << "About to read" << std::endl;
-    int rem_pos = start_pos % 8;
-    int end_pos = 8 - rem_pos;
-    start_pos = start_pos / 8;
-    std::cout << "Block size " << this->block_size << std::endl;
+    // TODO: fix this function
+    // std::cout << "Incoming target pos: " << target_pos << std::endl;
+    // std::cout << "Block size: " << this->block_size << std::endl;
+    int bytes_offset = target_pos / 8; // starting byte number
+    int block_offset = target_pos % (this->block_size * 8);
+    int start_of_block = (bytes_offset / this->block_size) * this->block_size;
+    // std::cout << "Block size: " << this->block_size << std::endl;
     uint8_t nums[this->block_size];
 
-    fin.seekg(start_pos);
+    // std::cout << "Bytes offset: " << bytes_offset << std::endl;
+    // std::cout << "Start of target block: " << start_of_block << std::endl;
+    // std::cout << "Block offset: " << block_offset << std::endl;
+    fin.seekg(start_of_block);
     fin.read((char *)&nums, this->block_size);
 
     for (int idx = 0; idx < this->block_size; ++idx)
     {
-        int start_index = idx == 0 ? rem_pos : 0;
-        int end_index = idx == (this->block_size - 1) ? end_pos : 8;
-        int start_mask = 1 << start_index;
-        int array_size = end_index - start_index;
-        std::vector<bool> x(array_size, false);
-        for (uint8_t mask = start_mask, i = start_index; mask > 0 && i < end_index; ++i, mask <<= 1)
-        {
-            x.at(i - start_index) = nums[idx] & mask;
-        }
+        std::vector<bool> x(8, false);
+        for (uint8_t mask = 1, i = 0; mask > 0 && i < 8; ++i, mask <<= 1)
+            x.at(i) = nums[idx] & mask;
 
         for (int i = 0; i < x.size(); ++i)
-        {
-            this->block_data.push_back(x[i]);
-        }
+            this->block_data[idx * 8 + i] = x.at(i);
     }
-
-    std::cout << "Done reading" << std::endl;
-    std::cout << this->block_data.size() << std::endl;
+    // std::cout << "Block length: " << this->block_data.size() << std::endl;
+    this->print_value(this->block_data.at(block_offset));
     return;
 }
 
@@ -84,6 +96,18 @@ template <typename T>
 void Block<T>::write_data(std::ofstream &fout, int start_pos)
 {
     return;
+}
+
+template <typename T>
+void Block<T>::print_value(T ele)
+{
+    std::cout << ele << std::endl;
+}
+
+template <>
+void Block<__int8>::print_value(__int8 ele)
+{
+    std::cout << (int)ele << std::endl;
 }
 
 template <typename T>

@@ -32,13 +32,13 @@ namespace FileNameConstants
 
 namespace ColumnTypeConstants
 {
-    typedef __int8 year;
+    typedef __int16 year;
     typedef __int8 month;
     typedef __int8 day;
 
     typedef bool city;
 
-    typedef __int8 time;
+    typedef __int16 time;
     typedef time_t raw_timestamp;
 
     typedef float temperature;
