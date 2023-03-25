@@ -43,7 +43,7 @@ namespace ColumnTypeConstants
 
     typedef float temperature;
     typedef float humidity;
-    typedef int position;
+    typedef __int32 position;
 }
 
 namespace ColumnSizeConstants

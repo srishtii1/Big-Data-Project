@@ -94,10 +94,14 @@ std::vector<int> QueryProcessor::get_month_pos(int month, std::string year_pos_f
 void QueryProcessor::print_year_pos()
 {
     std::ifstream fin;
-    fin.open("tmp/year_pos.dat");
+    fin.open("tmp/year_pos.dat", std::ios::binary);
+    // fin.seekg(0, std::ios::end);
+    // int file_size = fin.tellg();
+    // int num_blocks = file_size / ColumnSizeConstants::position;
+
     Block<ColumnTypeConstants::position> year_position_block(this->block_size);
     int read_pos = 0;
-    while (!fin.eof())
+    while (fin.good())
     {
         year_position_block.read_data(fin, read_pos, false);
         year_position_block.print_data();
