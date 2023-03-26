@@ -1,4 +1,5 @@
 #include "query_processing.hpp"
+#include "query_proccessor/scan/predicate.hpp"
 
 QueryProcessor::QueryProcessor(int block_size)
 {
@@ -115,7 +116,29 @@ void QueryProcessor::print_year_pos()
 
 void QueryProcessor::process_query(int year1, int year2, bool city)
 {
-    this->get_year_pos(year1, year2);
-    std::cout << "Year 1 " << year1 << " Year 2 " << year2 << std ::endl;
-    this->print_year_pos();
+    // this->get_year_pos(year1, year2);
+    // std::cout << "Year 1 " << year1 << " Year 2 " << year2 << std ::endl;
+    // this->print_year_pos();
+
+    // Filter Year using binary search on zonemap since its sorted , create 2 predicates = year1, = year2
+    
+    Predicate<int> p1 = Predicate<int>("=", year1);
+    Predicate<int> p2 = Predicate<int>("=", year2);
+    OrPredicate<int> orPred = OrPredicate<int>({p1, p2});
+    // Create Filter object and scan results
+
+    // Filter City (Create Predicate and Filter)
+    Predicate<bool> p3 = Predicate<bool>("=", city);
+
+    // Save Group By Key for the required positions
+
+    // Aggregate Fn over group by key
+    // For each group by key create a new aggregate fn
+    // Scan Temp
+    // Scan Hummidity
+
+    // Iterate through again to compare = aggr value
+
+    // Load positions and get YYYY-MM-DD for each category
+
 }

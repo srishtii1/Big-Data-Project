@@ -28,6 +28,10 @@ public:
     void print_value(T ele);
     void write_data(std::ofstream &fout, int start_pos);
     void print_data();
+
+    std::vector<T> get_data(); // return all the data
+    void add_data(T data);
+    void flush(); // Flush elements
 };
 
 template <typename T>
@@ -58,6 +62,12 @@ template <typename T>
 inline void Block<T>::print_value(T ele)
 {
     std::cout << ele << std::endl;
+}
+
+template <typename T>
+inline std::vector<T> Block<T>::get_data()
+{
+    return this->block_data;
 }
 
 template <>

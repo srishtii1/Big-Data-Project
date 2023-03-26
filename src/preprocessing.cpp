@@ -57,6 +57,7 @@ void preprocess_csv()
 
     std::ifstream input_file;
 
+
     if (!exists)
     // if (true)
     {
@@ -92,19 +93,11 @@ void preprocess_csv()
 
             while (getline(s, word, ','))
             {
-                // std::cout << word << std::endl;
                 row.push_back(word);
             }
 
             if (counter <= 1)
                 continue; // Skip header
-
-            // if (row[3] == "M" && row[4] != "M")
-            //     std::cout << counter << '\n';
-            // if (row[4] == "M" && row[3] != "M")
-            //     std::cout << counter << '\n';
-            // if (row[3] == "M" || row[4] == "M")
-            //     continue; // Missing values
 
             if (row[3] == "M")
                 row[3] = "-1.00";
@@ -113,8 +106,8 @@ void preprocess_csv()
 
             // Process Timestamp
             auto timestamp = row[1];
+
             // YYYY-MM-DD HH:MM
-            // TODO: Discuss whether to use stringstream for this
             ColumnTypeConstants::year year = (ColumnTypeConstants::year)std::stoi(timestamp.substr(0, 4));
             ColumnTypeConstants::month month = (ColumnTypeConstants::month)std::stoi(timestamp.substr(5, 2));
             ColumnTypeConstants::day day = (ColumnTypeConstants::day)std::stoi(timestamp.substr(8, 2));
@@ -149,7 +142,6 @@ void preprocess_csv()
             // Process Station
             auto station = row[2];
             bool station_encoded = station == "Changi" ? false : true;
-            // file_map["city"]->write((char *) &station_encoded, (ColumnSizeConstants::city));
 
             city_compact.push_back(station_encoded);
             ++vec_size;
