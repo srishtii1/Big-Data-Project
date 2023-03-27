@@ -14,6 +14,8 @@ class Block
 {
 private:
     int block_size; // in bytes
+    int start_position;
+    int end_position;
 
 public:
     /**
@@ -30,8 +32,7 @@ public:
     void print_data();
 
     std::vector<T> get_data(); // return all the data
-    void add_data(T data);
-    void flush(); // Flush elements
+    std::pair<int, int> get_range();
 };
 
 template <typename T>
@@ -39,6 +40,8 @@ inline Block<T>::Block()
 {
     this->block_size = 0;
     this->curr_start_of_block = -1;
+    this->start_position = -1;
+    this->end_position = -1;
 }
 
 template <typename T>
@@ -47,7 +50,8 @@ inline Block<T>::Block(int block_size)
     this->block_size = block_size;
     this->curr_start_of_block = -1;
     this->block_data.resize(this->block_size / sizeof(T));
-    // std::cout << "Number of elements: " << this->block_data.size() << std::endl;
+    this->start_position = -1;
+    this->end_position = -1;
 }
 
 template <>
@@ -55,7 +59,8 @@ inline Block<bool>::Block(int block_size)
 {
     this->block_size = block_size;
     this->block_data.resize(this->block_size * 8);
-    // std::cout << "Number of elements: " << this->block_data.size() << std::endl;
+    this->start_position = -1;
+    this->end_position = -1;
 }
 
 template <typename T>
@@ -88,45 +93,56 @@ inline void Block<__int8>::print_value(__int8 ele)
 template <typename T>
 inline void Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose)
 {
-    // std::cout << "Incoming target pos: " << target_pos << std::endl;
-    // std::cout << "Data type size: " << sizeof(T) << std::endl;
-    // std::cout << "Block size: " << this->block_size << std::endl;
     int bytes_offset = target_pos * sizeof(T);
     int block_offset = (bytes_offset % this->block_size) / sizeof(T);
     int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
+    
     if (start_of_block == this->curr_start_of_block)
     {
-        std::cout << "Current block already contains target position." << std::endl;
+        //std::cout << "Current block already contains target position.\n";
         return;
     }
-    // std::cout << "Bytes offset: " << bytes_offset << std::endl;
-    // std::cout << "Start of target block: " << start_of_block << std::endl;
-    // std::cout << "Block offset: " << block_offset << std::endl;
+    else
+    {
+        // std::cout << "Reading Block\n";
+        this->curr_start_of_block = start_of_block;
+    }
+
     fin.seekg(start_of_block);
-    fin.read(reinterpret_cast<char *>(this->block_data.data()), this->block_size);
-    // std::cout << "Block length: " << this->block_data.size() << std::endl;
+    fin.read(reinterpret_cast<char *>(this->block_data.data()), this->block_data.size() * sizeof(T));
+
     if (verbose)
         this->print_value(this->block_data.at(block_offset));
+
+    this->start_position = (start_of_block / this->block_size) * (this->block_size / sizeof(T));
+    this->end_position = start_position + this->block_data.size();
     return;
 }
 
 template <>
 inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verbose)
 {
-    // TODO: fix this function
-    // std::cout << "Incoming target pos: " << target_pos << std::endl;
-    // std::cout << "Block size: " << this->block_size << std::endl;
     int bytes_offset = target_pos / 8; // starting byte number
     int block_offset = target_pos % (this->block_size * 8);
     int start_of_block = (bytes_offset / this->block_size) * this->block_size;
-    // std::cout << "Block size: " << this->block_size << std::endl;
-    uint8_t nums[this->block_size];
 
-    // std::cout << "Bytes offset: " << bytes_offset << std::endl;
-    // std::cout << "Start of target block: " << start_of_block << std::endl;
-    // std::cout << "Block offset: " << block_offset << std::endl;
+    if (start_of_block == this->curr_start_of_block)
+    {
+        //std::cout << "Current block already contains target position.\n";
+        return;
+    }
+    else
+    {
+        // std::cout << "Reading Block\n";
+        this->curr_start_of_block = start_of_block;
+    }
+
+    int num_elements = this->block_size / sizeof(uint8_t);
+
+    uint8_t nums[num_elements];
+
     fin.seekg(start_of_block);
-    fin.read((char *)&nums, this->block_size);
+    fin.read((char *)&nums, num_elements * sizeof(uint8_t));
 
     for (int idx = 0; idx < this->block_size; ++idx)
     {
@@ -137,7 +153,10 @@ inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
         for (int i = 0; i < x.size(); ++i)
             this->block_data[idx * 8 + i] = x.at(i);
     }
-    // std::cout << "Block length: " << this->block_data.size() << std::endl;
+    
+    this->start_position = (start_of_block / this->block_size) * (this->block_size * 8);
+    this->end_position = start_position + this->block_data.size();
+
     if (verbose)
         this->print_value(this->block_data.at(block_offset));
     return;
@@ -165,6 +184,12 @@ inline void Block<__int8>::print_data()
     for (__int8 ele : this->block_data)
         std::cout << (int)ele << " ";
     std::cout << std::endl;
+}
+
+template <typename T>
+inline std::pair<int, int> Block<T>::get_range()
+{
+    return std::make_pair(this->start_position, this->end_position);
 }
 
 #endif

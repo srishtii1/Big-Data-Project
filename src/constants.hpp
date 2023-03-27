@@ -17,6 +17,8 @@ namespace FileNameConstants
     const std::string humidity = "humidity_encoded.dat";
     const std::string raw_timestamp = "raw_timestamp_encoded.dat";
 
+    const std::string positions = "temp/positions.dat";
+
     const std::unordered_map<std::string, std::string> file_names =
         {
             {"year", year},
@@ -26,24 +28,25 @@ namespace FileNameConstants
             {"time", time},
             {"temperature", temperature},
             {"humidity", humidity},
-            {"raw_timestamp", raw_timestamp}};
+            {"raw_timestamp", raw_timestamp},
+            {"positions", positions}};
 
 }
 
 namespace ColumnTypeConstants
 {
-    typedef __int16 year;
-    typedef __int8 month;
-    typedef __int8 day;
+    typedef uint16_t year;
+    typedef uint8_t month;
+    typedef uint8_t day;
 
     typedef bool city;
 
-    typedef __int16 time;
+    typedef uint16_t time;
     typedef time_t raw_timestamp;
 
     typedef float temperature;
     typedef float humidity;
-    typedef __int32 position;
+    typedef uint32_t position;
 }
 
 namespace ColumnSizeConstants
@@ -65,7 +68,7 @@ namespace ColumnSizeConstants
 
 namespace ProgramConstants
 {
-    const int num_columns = 476922;
+    const int num_columns = 476921;
 }
 
 #endif

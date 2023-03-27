@@ -81,14 +81,16 @@ void preprocess_csv()
 
         std::string line, word;
 
-        int counter = 0;
+        uint32_t counter = 0;
+
+        uint32_t idx = 0;
 
         while (input_file.good())
         {
             row.clear();
             getline(input_file, line);
             std::stringstream s(line);
-
+            
             ++counter;
 
             while (getline(s, word, ','))
@@ -98,6 +100,9 @@ void preprocess_csv()
 
             if (counter <= 1)
                 continue; // Skip header
+            
+            file_map["positions"]->write((char *)&idx, (ColumnSizeConstants::position));
+            ++idx;
 
             if (row[3] == "M")
                 row[3] = "-1.00";

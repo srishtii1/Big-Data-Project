@@ -1,5 +1,6 @@
 #include "query_processing.hpp"
 #include "query_proccessor/scan/predicate.hpp"
+#include "query_proccessor/scan/filter.hpp"
 
 QueryProcessor::QueryProcessor(int block_size)
 {
@@ -114,23 +115,36 @@ void QueryProcessor::print_year_pos()
     }
 }
 
-void QueryProcessor::process_query(int year1, int year2, bool city)
+void QueryProcessor::process_query(uint16_t year1, uint16_t year2, bool city)
 {
-    // this->get_year_pos(year1, year2);
-    // std::cout << "Year 1 " << year1 << " Year 2 " << year2 << std ::endl;
-    // this->print_year_pos();
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/temp2.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     uint32_t idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx << '\n';
+    // }
+    // ifile.close();
 
-    // Filter Year using binary search on zonemap since its sorted , create 2 predicates = year1, = year2
+    // return;
     
-    Predicate<int> p1 = Predicate<int>("=", year1);
-    Predicate<int> p2 = Predicate<int>("=", year2);
-    OrPredicate<int> orPred = OrPredicate<int>({p1, p2});
-    // Create Filter object and scan results
+    AtomicPredicate<uint16_t> *p1 = new AtomicPredicate<uint16_t>("=", year1);
+    AtomicPredicate<uint16_t> *p2 = new AtomicPredicate<uint16_t>("=", year2);
+    OrPredicate<uint16_t> orPred = OrPredicate<uint16_t>({p1, p2});
 
-    // Filter City (Create Predicate and Filter)
-    Predicate<bool> p3 = Predicate<bool>("=", city);
 
-    // Save Group By Key for the required positions
+    // Filter Year
+    Filter<uint16_t> year_filter = Filter<uint16_t>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat");
+    year_filter.process_filter(orPred);
+    
+    // Filter City
+    AtomicPredicate<bool> p3 = AtomicPredicate<bool>("=", city);
+    Filter<bool> city_filter = Filter<bool>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat");
+    city_filter.process_filter(p3);
+
+
+    // Save Group By Key for the required positions along with posiiton
 
     // Aggregate Fn over group by key
     // For each group by key create a new aggregate fn
