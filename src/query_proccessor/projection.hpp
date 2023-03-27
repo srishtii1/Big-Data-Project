@@ -62,12 +62,16 @@ void Projection::save_result(std::string position_file_name, std::ofstream &outp
         dates[it->first] = {};
     }
 
+    int pos = 0;
+
     while(position_file.good())
     {
         position_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(uint32_t));
 
         for (int i=0; i<positions.size(); ++i)
         {
+            if (positions[i] < pos) continue;
+            else pos = positions[i];
             data_block.read_data(data_file, positions[i], false);
             std::vector<time_t> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();

@@ -157,6 +157,7 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     std::map<std::string, float> max_temp;
     groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_temp.dat", "data/column_store/temp/min_temp.dat", "data/column_store/temperature_encoded.dat", min_temp, max_temp);
 
+
     std::cout << "\nMin Temp\n";
     for (auto it=min_temp.begin(); it!=min_temp.end(); ++it)
     {
