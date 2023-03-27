@@ -108,7 +108,7 @@ int main(int argc, char **argv)
         preprocess_csv();
         // test_reading(block_size, target_pos);
         QueryProcessor query_processor(block_size);
-        query_processor.process_query(query.year1, query.year2, query.city);
+        query_processor.process_query(matriculation_number, query.year1, query.year2, query.city);
     }
 
     catch (const std::exception &exc)

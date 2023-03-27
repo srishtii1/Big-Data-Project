@@ -29,7 +29,7 @@ private:
 
 public:
     QueryProcessor(int block_size);
-    void process_query(uint16_t year1, uint16_t year2, bool city);
+    void process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city);
     void output_to_year_pos_file(Block<ColumnTypeConstants::position> &year_position_block, int &write_pos, int &pos_index);
     void get_year_pos(int year1, int year2);
     void print_year_pos();

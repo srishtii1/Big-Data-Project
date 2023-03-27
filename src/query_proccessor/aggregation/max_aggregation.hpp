@@ -3,6 +3,7 @@
 
 #include "aggregate_function.hpp"
 #include <limits>
+#include <algorithm>
 
 template <typename T>
 class MaxAggregation : public AggregationFunction<T>
@@ -10,10 +11,11 @@ class MaxAggregation : public AggregationFunction<T>
 private:
     int count;
     T value;
+
 public:
     MaxAggregation();
-    ~MaxAggregation();
-    void compute_value(T value);
+    void add_value(T value);
+    T compute_value();
 };
 
 template <typename T>
@@ -24,10 +26,16 @@ MaxAggregation<T>::MaxAggregation()
 }
 
 template<typename T>
-void MaxAggregation<T>::compute_value(T value)
+void MaxAggregation<T>::add_value(T value)
 {
     ++this->count;
-    this->value = max(this->value, value);
+    this->value = std::max(this->value, value);
+}
+
+template<typename T>
+T MaxAggregation<T>::compute_value()
+{
+    return this->value;
 }
 
 

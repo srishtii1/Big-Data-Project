@@ -1,6 +1,11 @@
 #include "query_processing.hpp"
 #include "query_proccessor/scan/predicate.hpp"
 #include "query_proccessor/scan/filter.hpp"
+#include "query_proccessor/groupby/groupby.hpp"
+
+#include "query_proccessor/projection.hpp"
+
+#include <map>
 
 QueryProcessor::QueryProcessor(int block_size)
 {
@@ -115,7 +120,7 @@ void QueryProcessor::print_year_pos()
     }
 }
 
-void QueryProcessor::process_query(uint16_t year1, uint16_t year2, bool city)
+void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city)
 {
     // std::ifstream ifile;
     // ifile.open("data/column_store/temp/temp2.dat", std::ios::binary);
@@ -133,7 +138,6 @@ void QueryProcessor::process_query(uint16_t year1, uint16_t year2, bool city)
     AtomicPredicate<uint16_t> *p2 = new AtomicPredicate<uint16_t>("=", year2);
     OrPredicate<uint16_t> orPred = OrPredicate<uint16_t>({p1, p2});
 
-
     // Filter Year
     Filter<uint16_t> year_filter = Filter<uint16_t>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat");
     year_filter.process_filter(orPred);
@@ -146,13 +150,63 @@ void QueryProcessor::process_query(uint16_t year1, uint16_t year2, bool city)
 
     // Save Group By Key for the required positions along with posiiton
 
-    // Aggregate Fn over group by key
-    // For each group by key create a new aggregate fn
-    // Scan Temp
-    // Scan Hummidity
+    GroupBy groupby_year_month = GroupBy();
+    groupby_year_month.save_groupby_key("data/column_store/temp/temp2.dat", "data/column_store/temp/temp3.dat", "data/column_store/raw_timestamp_encoded.dat");
 
-    // Iterate through again to compare = aggr value
+    std::map<std::string, float> min_temp;
+    std::map<std::string, float> max_temp;
+    groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_temp.dat", "data/column_store/temp/min_temp.dat", "data/column_store/temperature_encoded.dat", min_temp, max_temp);
 
-    // Load positions and get YYYY-MM-DD for each category
+    std::cout << "\nMin Temp\n";
+    for (auto it=min_temp.begin(); it!=min_temp.end(); ++it)
+    {
+        std::cout << it->first << " : " << it->second <<'\n';
+    }
 
+    std::cout << "\nMax Temp\n";
+    for (auto it=max_temp.begin(); it!=max_temp.end(); ++it)
+    {
+        std::cout << it->first << " : " << it->second <<'\n';
+    }
+
+    std::map<std::string, float> min_humid;
+    std::map<std::string, float> max_humid;
+    groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_humid.dat", "data/column_store/temp/min_humid.dat", "data/column_store/humidity_encoded.dat", min_humid, max_humid);
+    
+    std::cout << "\nMin Humid\n";
+    for (auto it=min_humid.begin(); it!=min_humid.end(); ++it)
+    {
+        std::cout << it->first << " : " << it->second <<'\n';
+    }
+
+    std::cout << "\nMax Humid\n";
+    for (auto it=max_humid.begin(); it!=max_humid.end(); ++it)
+    {
+        std::cout << it->first << " : " << it->second <<'\n';
+    }
+
+    std::string output_file_name = "data/output/ScanrResult_" + matric_num + ".csv";
+
+    std::ofstream output_file;
+    output_file.open(output_file_name);
+    output_file << "Date,Station,Category,Value\n";
+
+    std::string position_file_name = "";
+    std::string proj_file = "data/column_store/raw_timestamp_encoded.dat";
+
+    Projection proj;
+
+    position_file_name = "data/column_store/temp/max_temp.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city==0?"Changi":"Paya Lebar", "Max Temperature", max_temp);
+
+    position_file_name = "data/column_store/temp/min_temp.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city==0?"Changi":"Paya Lebar", "Min Temperature", min_temp);
+
+    position_file_name = "data/column_store/temp/max_humid.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city==0?"Changi":"Paya Lebar", "Max Humidity", max_humid);
+
+    position_file_name = "data/column_store/temp/min_humid.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city==0?"Changi":"Paya Lebar", "Min Humidity", min_temp);
+
+    output_file.close();
 }

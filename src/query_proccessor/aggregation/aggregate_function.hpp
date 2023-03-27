@@ -5,8 +5,8 @@ template <typename T>
 class AggregationFunction
 {
 public:
-    AggregationFunction();
-    virtual void compute_value(T value) = 0;
+    virtual void add_value(T value) = 0;
+    virtual T compute_value() = 0;
     
 };
 

@@ -21,7 +21,7 @@ private:
     std::ifstream data_file;
 
 public:
-    Filter(std::string position_input_file, std::string position_output_file, std::string data_file);
+    Filter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name);
     ~Filter();
     void process_filter(Predicate<T>& predicate); // Use the templates here
 };
@@ -37,12 +37,8 @@ Filter<T>::Filter(std::string position_input_file_name, std::string position_out
 template <typename T>
 void Filter<T>::process_filter(Predicate<T>& pred)
 {
-    pred.display();
-    std::cout << '\n';
-
     int position_block_size = 2048;
     std::vector<uint32_t> positions(position_block_size / sizeof(uint32_t));
-    std::cout << "Num Elements: " << position_block_size / sizeof(uint32_t) << '\n';
     Block<T> data_block = Block<T>(2048);
 
     std::vector<uint32_t> qualififed_positions;
@@ -68,12 +64,19 @@ void Filter<T>::process_filter(Predicate<T>& pred)
                qualififed_positions.push_back(positions[i]);
                if(num_qualified_tuples >= position_block_size / sizeof(uint32_t))
                {
-                this->position_output_file.write(reinterpret_cast<char *>(qualififed_positions.data()), qualififed_positions.size() * sizeof(uint32_t));
-                num_qualified_tuples = 0;
-                qualififed_positions.clear();
+                    this->position_output_file.write(reinterpret_cast<char *>(qualififed_positions.data()), qualififed_positions.size() * sizeof(uint32_t));
+                    num_qualified_tuples = 0;
+                    qualififed_positions.clear();
                }
             }
         }
+    }
+
+    if(num_qualified_tuples > 0)
+    {
+        this->position_output_file.write(reinterpret_cast<char *>(qualififed_positions.data()), qualififed_positions.size() * sizeof(uint32_t));
+        num_qualified_tuples = 0;
+        qualififed_positions.clear();
     }
 }
 
@@ -87,15 +90,6 @@ Filter<T>::~Filter()
 }
 
 
-// class SortedFilter : public Filter
-// {
-
-// };
-
-// class ZoneMapFilter : public Filter
-// {
-
-// };
 
 
 #endif // FILTER_H
