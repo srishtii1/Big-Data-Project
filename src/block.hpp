@@ -5,6 +5,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "constants.hpp"
+
 template <typename T>
 class Block
 /**
@@ -16,6 +18,7 @@ private:
     int block_size; // in bytes
     int start_position;
     int end_position;
+    int num_elements;
 
 public:
     /**
@@ -28,8 +31,12 @@ public:
     Block(int block_size);
     void read_data(std::ifstream &fin, int target_pos, bool verbose);
     void print_value(T ele);
-    void write_data(std::ofstream &fout, int start_pos);
+    void push_data(T ele, int index);
+    void write_data(std::ofstream &fout);
+    bool read_next_block(std::ifstream &fin);
     void print_data();
+    bool is_full(int num_filled);
+    void clear();
 
     std::vector<T> get_data(); // return all the data
     std::pair<int, int> get_range();
@@ -49,7 +56,8 @@ inline Block<T>::Block(int block_size)
 {
     this->block_size = block_size;
     this->curr_start_of_block = -1;
-    this->block_data.resize(this->block_size / sizeof(T));
+    this->num_elements = this->block_size / sizeof(T);
+    this->block_data.resize(this->num_elements);
     this->start_position = -1;
     this->end_position = -1;
 }
@@ -58,7 +66,8 @@ template <>
 inline Block<bool>::Block(int block_size)
 {
     this->block_size = block_size;
-    this->block_data.resize(this->block_size * 8);
+    this->num_elements = this->block_size * 8;
+    this->block_data.resize(this->num_elements);
     this->start_position = -1;
     this->end_position = -1;
 }
@@ -96,10 +105,10 @@ inline void Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
     int bytes_offset = target_pos * sizeof(T);
     int block_offset = (bytes_offset % this->block_size) / sizeof(T);
     int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
-    
+
     if (start_of_block == this->curr_start_of_block)
     {
-        //std::cout << "Current block already contains target position.\n";
+        // std::cout << "Current block already contains target position.\n";
         return;
     }
     else
@@ -128,7 +137,7 @@ inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
 
     if (start_of_block == this->curr_start_of_block)
     {
-        //std::cout << "Current block already contains target position.\n";
+        // std::cout << "Current block already contains target position.\n";
         return;
     }
     else
@@ -153,7 +162,7 @@ inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
         for (int i = 0; i < x.size(); ++i)
             this->block_data[idx * 8 + i] = x.at(i);
     }
-    
+
     this->start_position = (start_of_block / this->block_size) * (this->block_size * 8);
     this->end_position = start_position + this->block_data.size();
 
@@ -163,11 +172,16 @@ inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
 }
 
 template <typename T>
-inline void Block<T>::write_data(std::ofstream &fout, int target_pos)
+inline void Block<T>::write_data(std::ofstream &fout)
 {
-    // std::ofstream *output_file = new std::ofstream("data/column_store/" + it->second, std::ios::out | std::ios::binary);
-    // fout.seekp(target_pos * sizeof(T));
-    fout.write((char *)&block_data[0], block_data.size() * sizeof(T));
+    fout.write((char *)&block_data[0], this->block_data.size() * sizeof(T));
+}
+
+template <typename T>
+inline void Block<T>::push_data(T ele, int index)
+{
+    this->block_data.at(index) = ele;
+    // this->print_data();
 }
 
 template <typename T>
@@ -176,6 +190,26 @@ inline void Block<T>::print_data()
     for (T ele : this->block_data)
         std::cout << ele << " ";
     std::cout << std::endl;
+}
+
+template <typename T>
+inline bool Block<T>::read_next_block(std::ifstream &fin)
+{
+    this->clear();
+    int next_start_index = (this->curr_start_of_block == -1) ? 0 : (this->curr_start_of_block / sizeof(T) + this->num_elements);
+    // if (next_start_index % 10000 == 0)
+    //     std::cout << "Next start index:" << next_start_index << std::endl;
+    if (next_start_index > ProgramConstants::num_columns)
+        return false;
+    this->read_data(fin, next_start_index, false);
+    return true;
+}
+
+template <typename T>
+inline bool Block<T>::is_full(int num_filled)
+{
+    // std::cout << num_filled << this->num_elements << std::endl;
+    return (num_filled == this->num_elements);
 }
 
 template <>
@@ -190,6 +224,13 @@ template <typename T>
 inline std::pair<int, int> Block<T>::get_range()
 {
     return std::make_pair(this->start_position, this->end_position);
+}
+
+template <typename T>
+inline void Block<T>::clear()
+{
+    this->block_data.clear();
+    this->block_data.resize(this->num_elements);
 }
 
 #endif

@@ -57,9 +57,8 @@ void preprocess_csv()
 
     std::ifstream input_file;
 
-
-    if (!exists)
-    // if (true)
+    // if (!exists)
+    if (true)
     {
 
         std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
@@ -90,7 +89,7 @@ void preprocess_csv()
             row.clear();
             getline(input_file, line);
             std::stringstream s(line);
-            
+
             ++counter;
 
             while (getline(s, word, ','))
@@ -100,7 +99,7 @@ void preprocess_csv()
 
             if (counter <= 1)
                 continue; // Skip header
-            
+
             file_map["positions"]->write((char *)&idx, (ColumnSizeConstants::position));
             ++idx;
 
