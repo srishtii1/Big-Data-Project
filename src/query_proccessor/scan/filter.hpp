@@ -31,7 +31,7 @@ template <typename T>
 Filter<T>::Filter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, int block_size)
 {
     this->position_input_file.open(position_input_file_name, std::ios::binary);
-    this->position_output_file.open(position_output_file_name, std::ios_base::app | std::ios::binary);
+    this->position_output_file.open(position_output_file_name, std::ios::binary);
     this->data_file.open(data_file_name, std::ios::binary);
     this->block_size = block_size;
 }
