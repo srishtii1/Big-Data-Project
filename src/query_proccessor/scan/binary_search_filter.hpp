@@ -58,6 +58,8 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
         start = start_copy;
         end = end_copy;
 
+        bool done = false;
+
         while (start <= end)
         {
             int mid = start + (end - start) / 2;
@@ -65,22 +67,41 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
             data_block.read_data(this->data_file, mid, false);
 
             std::vector<T> data = data_block.get_data();
+            std::pair<int, int> range = data_block.get_range();
             
-            if (pred->evaluate_expr(data[0]))
+            for (int i=0; i<data.size(); ++i)
             {
-                required_pos = mid;
-                end = mid - 1;
+                if (pred->evaluate_expr(data[i]))
+                {
+                    required_pos = range.first + i;
+
+                    if (i != 0) 
+                    {
+                        done = true;
+                        break;
+                    }
+                    else {
+                        required_pos = range.first;
+                        break;
+                    }
+                }
             }
 
+            if (done) break;
             
+            if (pred->get_value() == data[0])
+            {
+                end = range.first - 1;
+            }
+
             else if (pred->get_value() < data[0])
             {
-                end = mid - 1;
+                end = range.first - 1;
             }
 
             else 
             {
-                start = mid + 1;
+                start = range.second + 1;
             }
         }
 
