@@ -1,6 +1,7 @@
 #include "query_processing.hpp"
 #include "query_proccessor/scan/predicate.hpp"
 #include "query_proccessor/scan/filter.hpp"
+#include "query_proccessor/scan/binary_search_filter.hpp"
 #include "query_proccessor/groupby/groupby.hpp"
 
 #include "query_proccessor/projection.hpp"
@@ -49,7 +50,7 @@ void QueryProcessor::get_year_pos(int year1, int year2)
     Block<ColumnTypeConstants::position> year_position_block(this->block_size);
     int pos_index = 0;
     int write_pos = 0;
-    for (int i = 0; i < ProgramConstants::num_columns; i += num_years_in_block)
+    for (int i = 0; i < ProgramConstants::num_rows; i += num_years_in_block)
     {
         this->year_block.read_data(fin, i, false);
         for (auto it = this->year_block.block_data.begin(); it != this->year_block.block_data.end(); it++)
@@ -122,25 +123,19 @@ void QueryProcessor::print_year_pos()
 
 void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city)
 {
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/temp2.dat", std::ios::binary);
-    // while(ifile.good())
-    // {
-    //     uint32_t idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx << '\n';
-    // }
-    // ifile.close();
 
-    // return;
+    // AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
+    // AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+    // OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
 
-    AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
-    AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
-    OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
+    AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
+    AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
 
     // Filter Year
-    Filter<ColumnTypeConstants::year> year_filter = Filter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
-    year_filter.process_filter(orPred);
+    // Filter<ColumnTypeConstants::year> year_filter = Filter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
+    // year_filter.process_filter(orPred);
+    BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
+    year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
 
     // Filter City
     AtomicPredicate<ColumnTypeConstants::city> p3 = AtomicPredicate<ColumnTypeConstants::city>("=", city);
@@ -184,7 +179,7 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
         std::cout << it->first << " : " << it->second << '\n';
     }
 
-    std::string output_file_name = "data/output/ScanrResult_" + matric_num + ".csv";
+    std::string output_file_name = "data/output/ScanResult_" + matric_num + ".csv";
 
     std::ofstream output_file;
     output_file.open(output_file_name);

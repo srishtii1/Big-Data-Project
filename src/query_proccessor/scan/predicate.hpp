@@ -43,6 +43,8 @@ public:
     AtomicPredicate(std::string op, T value);
     bool evaluate_expr(T lhs);
     void display();
+    T get_value();
+    std::string get_operator();
 };
 
 template <typename T>
@@ -73,6 +75,18 @@ void AtomicPredicate<T>::display()
 {
     std::cout << "LHS"
               << " " << this->op << " " << this->value;
+}
+
+template <typename T>
+T AtomicPredicate<T>::get_value()
+{
+    return this->value;
+}
+
+template <typename T>
+std::string AtomicPredicate<T>::get_operator()
+{
+    return this->op;
 }
 
 template <typename T>
