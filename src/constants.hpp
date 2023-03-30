@@ -68,7 +68,7 @@ namespace ColumnSizeConstants
 
 namespace ProgramConstants
 {
-    const int num_columns = 476921;
+    const int num_rows = 476920;
 }
 
 #endif

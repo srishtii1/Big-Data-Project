@@ -9,13 +9,7 @@ template <typename T>
 class Filter
 {
 private:
-    // position file name // if position file is nullptr then scan entire column // Read position into an object of Position / GroupBy Position
-    // column file name
-    // List of predicates
-    // Save position file name along with groupby attribute? // Save into Position or GroupBy position
 
-    // Instantiate Blocks. Move to the position and compare predicate. If yes save position in block.add_data
-    // 1 block to read positions, 1 block to read column data, 1 block to write position
     std::ifstream position_input_file;
     std::ofstream position_output_file;
     std::ifstream data_file;
@@ -73,7 +67,7 @@ void Filter<T>::process_filter(Predicate<T> &pred)
                 // std::cout << "Got qualified results" << std::endl;
                 qualified_positions_block.push_data(positions_block.block_data[i], num_qualified_tuples);
                 ++num_qualified_tuples;
-                qualified_positions.push_back(positions_block.block_data[i]);
+                //qualified_positions.push_back(positions_block.block_data[i]);
                 // if (num_qualified_tuples >= position_block_size / ColumnSizeConstants::position)
                 // {
                 //     this->position_output_file.write(reinterpret_cast<char *>(qualified_positions.data()), qualified_positions.size() * ColumnSizeConstants::position);
@@ -103,6 +97,10 @@ void Filter<T>::process_filter(Predicate<T> &pred)
         num_qualified_tuples = 0;
         qualified_positions_block.clear();
     }
+
+    this->position_input_file.close();
+    this->position_output_file.close();
+    this->data_file.close();
 }
 
 template <typename T>

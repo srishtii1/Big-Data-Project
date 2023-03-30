@@ -199,7 +199,7 @@ inline bool Block<T>::read_next_block(std::ifstream &fin)
     int next_start_index = (this->curr_start_of_block == -1) ? 0 : (this->curr_start_of_block / sizeof(T) + this->num_elements);
     // if (next_start_index % 10000 == 0)
     //     std::cout << "Next start index:" << next_start_index << std::endl;
-    if (next_start_index > ProgramConstants::num_columns)
+    if (next_start_index > ProgramConstants::num_rows)
         return false;
     this->read_data(fin, next_start_index, false);
     return true;
