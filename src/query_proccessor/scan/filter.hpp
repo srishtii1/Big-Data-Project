@@ -50,11 +50,12 @@ void Filter<T>::process_filter(Predicate<T> &pred)
         //     break;
         // positions_block.print_data();
 
-        for (int i = 0; i < positions_block.num_elements; ++i)
+        for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
             // std::cout << "Position[i]" << positions_block.block_data[i] << std::endl;
             data_block.read_data(this->data_file, positions_block.block_data[i], false);
             std::vector<T> data = data_block.get_data();
+            if (data.size() == 0) break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i] - range.first;
@@ -92,7 +93,7 @@ void Filter<T>::process_filter(Predicate<T> &pred)
     // }
     if (num_qualified_tuples > 0)
     {
-        qualified_positions_block.write_data(this->position_output_file);
+        qualified_positions_block.write_data(this->position_output_file, num_qualified_tuples);
         num_qualified_tuples = 0;
         qualified_positions_block.clear();
     }

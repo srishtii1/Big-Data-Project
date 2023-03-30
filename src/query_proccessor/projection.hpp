@@ -70,7 +70,7 @@ void Projection::save_result(std::string position_file_name, std::ofstream &outp
         // position_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(uint32_t));
         bool status = positions_block.read_next_block(position_file);
 
-        for (int i = 0; i < positions_block.num_elements; ++i)
+        for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
             if (positions_block.block_data[i] < pos)
                 continue;

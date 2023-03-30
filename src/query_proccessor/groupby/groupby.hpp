@@ -58,10 +58,12 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
         // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * ColumnSizeConstants::position);
         bool status = positions_block.read_next_block(this->position_input_file);
 
-        for (int i = 0; i < positions_block.num_elements; ++i)
+        for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
+            // std::cout << positions_block.block_data[i] << '\n';
             data_block.read_data(this->data_file, positions_block.block_data[i], false);
             std::vector<ColumnTypeConstants::raw_timestamp> data = data_block.get_data();
+            if (data.size() == 0) break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i] - range.first;
@@ -91,18 +93,17 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
 
     std::cout << "Got qualified tuples" << std::endl;
 
-    // if (num_qualified_tuples > 0)
-    // {
-    //     this->position_key_output_file.write(reinterpret_cast<char *>(qualified_positions_with_key.data()), qualified_positions_with_key.size() * sizeof(GroupByYearMonthPosition));
-    //     num_qualified_tuples = 0;
-    //     qualified_positions_with_key.clear();
-    // }
-    if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
+    if (num_qualified_tuples > 0)
     {
-        qualified_positions_with_key_block.write_data(this->position_key_output_file);
+        qualified_positions_with_key_block.write_data(this->position_key_output_file, num_qualified_tuples);
         num_qualified_tuples = 0;
-        qualified_positions_with_key_block.clear();
     }
+    // if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
+    // {
+    //     qualified_positions_with_key_block.write_data(this->position_key_output_file);
+    //     num_qualified_tuples = 0;
+    //     qualified_positions_with_key_block.clear();
+    // }
 
     this->position_input_file.close();
     this->position_key_output_file.close();
@@ -129,11 +130,12 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
         // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(GroupByYearMonthPosition));
         bool status = positions_block.read_next_block(this->position_input_file);
 
-        for (int i = 0; i < positions_block.num_elements; ++i)
+        for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
-            // std::cout << "Position[i]: " << positions_block.block_data[i].position << std::endl;
+            //std::cout << "Position[i]: " << positions_block.block_data[i].position << " " << positions_block.block_data[i].key << std::endl;
             data_block.read_data(this->data_file, positions_block.block_data[i].position, false);
             std::vector<float> data = data_block.get_data();
+            if (data.size() == 0) break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i].position - range.first;
@@ -159,7 +161,7 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
         }
     }
 
-    std::cout << "Found max/min" << std::endl;
+    // std::cout << "Found max/min" << std::endl;
 
     this->position_input_file.close();
     this->position_key_output_file.close();
@@ -171,12 +173,15 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
     for (auto it = max_aggr.begin(); it != max_aggr.end(); ++it)
     {
         aggr_max[it->first] = it->second.compute_value();
+        // std::cout << it->first << " : " << it->second.compute_value() << "\n";
         max_compare[it->first] = new AtomicPredicate("=", it->second.compute_value());
     }
 
+    std::cout << '\n';
     for (auto it = min_aggr.begin(); it != min_aggr.end(); ++it)
     {
         aggr_min[it->first] = it->second.compute_value();
+        // std::cout << it->first << " : " << it->second.compute_value() << "\n";
         min_compare[it->first] = new AtomicPredicate("=", it->second.compute_value());
     }
 
@@ -204,10 +209,11 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
         // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(GroupByYearMonthPosition));
         bool status = positions_block.read_next_block(this->position_input_file);
 
-        for (int i = 0; i < positions_block.num_elements; ++i)
+        for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
             data_block.read_data(this->data_file, positions_block.block_data[i].position, false);
             std::vector<float> data = data_block.get_data();
+            if (data.size() == 0) break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i].position - range.first;
@@ -271,9 +277,9 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
     //     qualified_positions_max.clear();
     // }
 
-    if (num_qualified_tuples_max > 0)
+    if (num_qualified_tuples_min > 0)
     {
-        qualified_positions_min_block.write_data(min_output_pos);
+        qualified_positions_min_block.write_data(min_output_pos, num_qualified_tuples_min);
         num_qualified_tuples_min = 0;
         qualified_positions_min_block.clear();
     }
@@ -283,9 +289,9 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
     //     num_qualified_tuples_min = 0;
     //     qualified_positions_min.clear();
     // }
-    if (num_qualified_tuples_min > 0)
+    if (num_qualified_tuples_max > 0)
     {
-        qualified_positions_max_block.write_data(max_output_pos);
+        qualified_positions_max_block.write_data(max_output_pos, num_qualified_tuples_max);
         num_qualified_tuples_max = 0;
         qualified_positions_max_block.clear();
     }

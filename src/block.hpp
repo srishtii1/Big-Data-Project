@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "query_proccessor/groupby/groupbyyearmonthposition.hpp"
 #include "constants.hpp"
@@ -27,12 +28,13 @@ public:
      */
     std::vector<T> block_data;
     int curr_start_of_block;
-    int num_elements;
+    unsigned long long num_elements;
     Block();
     Block(int block_size);
     void read_data(std::ifstream &fin, int target_pos, bool verbose);
     void print_value(T ele);
     void push_data(T ele, int index);
+    void write_data(std::ofstream &fout, int num_elements);
     void write_data(std::ofstream &fout);
     bool read_next_block(std::ifstream &fin);
     void print_data();
@@ -57,7 +59,7 @@ inline Block<T>::Block(int block_size)
 {
     this->block_size = block_size;
     this->curr_start_of_block = -1;
-    this->num_elements = this->block_size / sizeof(T);
+    this->num_elements = (unsigned long long) this->block_size / sizeof(T);
     this->block_data.resize(this->num_elements);
     this->start_position = -1;
     this->end_position = -1;
@@ -102,10 +104,10 @@ inline void Block<__int8>::print_value(__int8 ele)
 
 template <typename T>
 inline void Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose)
-{
+{   
     int start_block_num = target_pos / this->num_elements;
-    int start_of_block = start_block_num * this->block_size;
-    int block_offset = start_of_block + (target_pos % this->num_elements) * this->block_size;
+    int start_of_block = start_block_num * (this->num_elements * sizeof(T));
+    int block_offset = target_pos % this->num_elements;
     // int block_offset = (bytes_offset % this->block_size) / sizeof(T);
     // int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
 
@@ -117,13 +119,38 @@ inline void Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
     // std::cout << "Reading Block\n";
     this->curr_start_of_block = start_of_block;
 
+    unsigned long long size;
+    fin.seekg(0, std::ios::end);
+    size=fin.tellg();
+
     fin.seekg(start_of_block);
-    fin.read(reinterpret_cast<char *>(this->block_data.data()), this->block_data.size() * sizeof(T));
+
+    // Exceeded file... This logic reads dummy 0s and resizes block data to 0 elements
+    if (size < start_of_block)
+    {
+        this->block_data.resize(this->block_size);
+        fin.read(reinterpret_cast<char *>(this->block_data.data()), this->num_elements * sizeof(T));
+        this->block_data.clear();
+        return;
+    }
+
+    unsigned long long data_size = size - start_of_block;
 
     if (verbose)
-        this->print_value(this->block_data.at(block_offset));
+    {
+        std::cout << std::min(data_size / sizeof(T), (this->num_elements)) << '\n';
+    }
 
-    this->start_position = (start_of_block / this->block_size) * (this->block_size / sizeof(T));
+    int num_elements = std::min(data_size / sizeof(T), (this->num_elements));
+
+    this->block_data.resize(num_elements);
+    
+    fin.read(reinterpret_cast<char *>(this->block_data.data()), num_elements * sizeof(T));
+
+    // if (verbose)
+    //     this->print_value(this->block_data.at(block_offset));
+
+    this->start_position = start_block_num * this->num_elements;
     this->end_position = start_position + this->block_data.size();
     return;
 }
@@ -172,6 +199,12 @@ inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
 }
 
 template <typename T>
+inline void Block<T>::write_data(std::ofstream &fout, int num_elements)
+{
+    fout.write((char *)&block_data[0], num_elements * sizeof(T));
+}
+
+template <typename T>
 inline void Block<T>::write_data(std::ofstream &fout)
 {
     fout.write((char *)&block_data[0], this->block_data.size() * sizeof(T));
@@ -182,6 +215,7 @@ inline void Block<T>::push_data(T ele, int index)
 {
     this->block_data.at(index) = ele;
     // this->print_data();
+    // std::cout << index << " " << ele << '\n';
 }
 
 template <typename T>
@@ -197,6 +231,7 @@ inline bool Block<T>::read_next_block(std::ifstream &fin)
 {
     this->clear();
     int next_start_index = (this->curr_start_of_block == -1) ? 0 : (this->curr_start_of_block / sizeof(T) + this->num_elements);
+
     // if (next_start_index % 10000 == 0)
     //     std::cout << "Next start index:" << next_start_index << std::endl;
     this->read_data(fin, next_start_index, false);

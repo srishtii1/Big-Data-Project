@@ -123,33 +123,91 @@ void QueryProcessor::print_year_pos()
 
 void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city)
 {
+    
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/positions.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     uint32_t idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx << '\n';
+    // }
+    // ifile.close();
 
-    // AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
-    // AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
-    // OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
+    AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
+    AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+    OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
 
-    AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
-    AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+    // AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
+    // AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
 
     // Filter Year
     // Filter<ColumnTypeConstants::year> year_filter = Filter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
-    // year_filter.process_filter(orPred);
-    BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
-    year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
+    // // year_filter.process_filter(orPred);
+
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/temp1.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     uint32_t idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx << '\n';
+    // }
+    // ifile.close();
+
+    // return;
+    // BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
+    // year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
 
     // Filter City
     AtomicPredicate<ColumnTypeConstants::city> p3 = AtomicPredicate<ColumnTypeConstants::city>("=", city);
-    Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
-    city_filter.process_filter(p3);
+    // Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
+    // city_filter.process_filter(p3);
+
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/temp2.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     uint32_t idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx << '\n';
+    // }
+    // ifile.close();
+
+    // return;
 
     // Save Group By Key for the required positions along with posiiton
 
     GroupBy groupby_year_month = GroupBy(this->block_size);
     groupby_year_month.save_groupby_key("data/column_store/temp/temp2.dat", "data/column_store/temp/temp3.dat", "data/column_store/raw_timestamp_encoded.dat");
 
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/temp3.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     GroupByYearMonthPosition idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx.key << " : " << idx.position << '\n';
+    // }
+    // ifile.close();
+
+    // return;
+
     std::map<std::string, ColumnTypeConstants::temperature> min_temp;
     std::map<std::string, ColumnTypeConstants::temperature> max_temp;
     groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_temp.dat", "data/column_store/temp/min_temp.dat", "data/column_store/temperature_encoded.dat", min_temp, max_temp);
+
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/max_temp.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     int idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx << '\n';
+    // }
+    // ifile.close();
+    // return;
+
 
     std::cout << "\nMin Temp\n";
     for (auto it = min_temp.begin(); it != min_temp.end(); ++it)
