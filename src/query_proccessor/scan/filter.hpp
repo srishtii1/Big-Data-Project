@@ -49,15 +49,15 @@ void Filter<T>::process_filter(Predicate<T> &pred)
     std::vector<ColumnTypeConstants::position> qualified_positions;
     int num_qualified_tuples = 0;
 
-    while (true)
+    while (this->position_input_file.good())
     {
         // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * ColumnSizeConstants::position);
         bool status = positions_block.read_next_block(this->position_input_file);
-        if (!status)
-            break;
+        // if (!status)
+        //     break;
         // positions_block.print_data();
 
-        for (int i = 0; i < positions_block.block_data.size(); ++i)
+        for (int i = 0; i < positions_block.num_elements; ++i)
         {
             // std::cout << "Position[i]" << positions_block.block_data[i] << std::endl;
             data_block.read_data(this->data_file, positions_block.block_data[i], false);
@@ -73,7 +73,7 @@ void Filter<T>::process_filter(Predicate<T> &pred)
                 // std::cout << "Got qualified results" << std::endl;
                 qualified_positions_block.push_data(positions_block.block_data[i], num_qualified_tuples);
                 ++num_qualified_tuples;
-                qualified_positions.push_back(positions_block.block_data[i]);
+                // qualified_positions.push_back(positions_block.block_data[i]);
                 // if (num_qualified_tuples >= position_block_size / ColumnSizeConstants::position)
                 // {
                 //     this->position_output_file.write(reinterpret_cast<char *>(qualified_positions.data()), qualified_positions.size() * ColumnSizeConstants::position);

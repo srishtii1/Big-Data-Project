@@ -4,36 +4,11 @@
 #include "../aggregation/aggregate_function.hpp"
 #include "../aggregation/max_aggregation.hpp"
 #include "../aggregation/min_aggregation.hpp"
+#include "../../block.hpp"
+#include "groupbyyearmonthposition.hpp"
 
 #include <fstream>
 #include <map>
-
-struct GroupByYearMonthPosition
-{
-    ColumnTypeConstants::position position;
-    char key[8];
-
-    GroupByYearMonthPosition() {}
-
-    GroupByYearMonthPosition(ColumnTypeConstants::position position, uint16_t year, uint8_t month)
-    {
-        this->position = position;
-        std::string year_string = std::to_string(year);
-        std::string month_string = std::to_string(month);
-        if (month_string.size() == 1)
-            month_string = "0" + month_string;
-        for (int i = 0; i < year_string.size(); ++i)
-        {
-            this->key[i] = year_string[i];
-        }
-        this->key[4] = '-';
-        for (int i = 0; i < month_string.size(); ++i)
-        {
-            this->key[5 + i] = month_string[i];
-        }
-        this->key[7] = '\0';
-    }
-};
 
 // Non-Generic Group By
 
@@ -69,47 +44,64 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
     this->data_file.open(data_file_name, std::ios::binary);
 
     int position_block_size = this->block_size;
-    std::vector<ColumnTypeConstants::position> positions(position_block_size / ColumnSizeConstants::position);
+    Block<ColumnTypeConstants::position> positions_block(position_block_size);
+    // std::vector<ColumnTypeConstants::position> positions(position_block_size / ColumnSizeConstants::position);
+
     Block<ColumnTypeConstants::raw_timestamp> data_block = Block<ColumnTypeConstants::raw_timestamp>(this->block_size);
 
-    std::vector<GroupByYearMonthPosition> qualified_positions_with_key;
+    // std::vector<GroupByYearMonthPosition> qualified_positions_with_key;
+    Block<GroupByYearMonthPosition> qualified_positions_with_key_block(this->block_size);
     int num_qualified_tuples = 0;
 
     while (this->position_input_file.good())
     {
-        this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * ColumnSizeConstants::position);
+        // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * ColumnSizeConstants::position);
+        bool status = positions_block.read_next_block(this->position_input_file);
 
-        for (int i = 0; i < positions.size(); ++i)
+        for (int i = 0; i < positions_block.num_elements; ++i)
         {
-            data_block.read_data(this->data_file, positions[i], false);
+            data_block.read_data(this->data_file, positions_block.block_data[i], false);
             std::vector<ColumnTypeConstants::raw_timestamp> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
 
-            int index = positions[i] - range.first;
+            int index = positions_block.block_data[i] - range.first;
 
             ColumnTypeConstants::raw_timestamp value = data[index];
             tm *ltm = localtime(&value);
 
-            GroupByYearMonthPosition key = GroupByYearMonthPosition(positions[i], 1900 + ltm->tm_year, 1 + ltm->tm_mon);
+            GroupByYearMonthPosition key = GroupByYearMonthPosition(positions_block.block_data[i], 1900 + ltm->tm_year, 1 + ltm->tm_mon);
+            qualified_positions_with_key_block.push_data(key, num_qualified_tuples);
             ++num_qualified_tuples;
-            qualified_positions_with_key.push_back(key);
+            // qualified_positions_with_key.push_back(key);
 
-            if (num_qualified_tuples >= position_block_size / sizeof(GroupByYearMonthPosition))
+            // if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
+            // {
+            //     this->position_key_output_file.write(reinterpret_cast<char *>(qualified_positions_with_key.data()), qualified_positions_with_key.size() * sizeof(GroupByYearMonthPosition));
+            //     num_qualified_tuples = 0;
+            //     qualified_positions_with_key.clear();
+            // }
+            if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
             {
-                this->position_key_output_file.write(reinterpret_cast<char *>(qualified_positions_with_key.data()), qualified_positions_with_key.size() * sizeof(GroupByYearMonthPosition));
+                qualified_positions_with_key_block.write_data(this->position_key_output_file);
                 num_qualified_tuples = 0;
-                qualified_positions_with_key.clear();
+                qualified_positions_with_key_block.clear();
             }
         }
     }
 
     std::cout << "Got qualified tuples" << std::endl;
 
-    if (num_qualified_tuples > 0)
+    // if (num_qualified_tuples > 0)
+    // {
+    //     this->position_key_output_file.write(reinterpret_cast<char *>(qualified_positions_with_key.data()), qualified_positions_with_key.size() * sizeof(GroupByYearMonthPosition));
+    //     num_qualified_tuples = 0;
+    //     qualified_positions_with_key.clear();
+    // }
+    if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
     {
-        this->position_key_output_file.write(reinterpret_cast<char *>(qualified_positions_with_key.data()), qualified_positions_with_key.size() * sizeof(GroupByYearMonthPosition));
+        qualified_positions_with_key_block.write_data(this->position_key_output_file);
         num_qualified_tuples = 0;
-        qualified_positions_with_key.clear();
+        qualified_positions_with_key_block.clear();
     }
 
     this->position_input_file.close();
@@ -124,7 +116,8 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
     this->data_file.open(data_file_name, std::ios::binary);
 
     int position_block_size = this->block_size;
-    std::vector<GroupByYearMonthPosition> positions(position_block_size / sizeof(GroupByYearMonthPosition));
+    // std::vector<GroupByYearMonthPosition> positions(position_block_size / sizeof(GroupByYearMonthPosition));
+    Block<GroupByYearMonthPosition> positions_block(position_block_size);
 
     Block<float> data_block = Block<float>(this->block_size);
 
@@ -133,22 +126,24 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
 
     while (this->position_input_file.good())
     {
-        this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(GroupByYearMonthPosition));
+        // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(GroupByYearMonthPosition));
+        bool status = positions_block.read_next_block(this->position_input_file);
 
-        for (int i = 0; i < positions.size(); ++i)
+        for (int i = 0; i < positions_block.num_elements; ++i)
         {
-            data_block.read_data(this->data_file, positions[i].position, false);
+            // std::cout << "Position[i]: " << positions_block.block_data[i].position << std::endl;
+            data_block.read_data(this->data_file, positions_block.block_data[i].position, false);
             std::vector<float> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
 
-            int index = positions[i].position - range.first;
+            int index = positions_block.block_data[i].position - range.first;
 
             float value = data[index];
 
             if (value == -1)
                 continue; // we encode -1 for missing values
 
-            std::string key(positions[i].key);
+            std::string key(positions_block.block_data[i].key);
 
             if (max_aggr.find(key) == max_aggr.end())
             {
@@ -163,6 +158,8 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
             min_aggr[key].add_value(value);
         }
     }
+
+    std::cout << "Found max/min" << std::endl;
 
     this->position_input_file.close();
     this->position_key_output_file.close();
@@ -192,69 +189,105 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
     max_output_pos.open(max_file_name, std::ios::binary);
     min_output_pos.open(min_file_name, std::ios::binary);
 
-    std::vector<ColumnTypeConstants::position> qualified_positions_min;
-    int num_qualified_tuples_min = 0;
+    positions_block = Block<GroupByYearMonthPosition>(position_block_size);
 
-    std::vector<ColumnTypeConstants::position> qualified_positions_max;
+    // std::vector<ColumnTypeConstants::position> qualified_positions_min;
+    int num_qualified_tuples_min = 0;
+    Block<ColumnTypeConstants::position> qualified_positions_min_block(position_block_size);
+
+    // std::vector<ColumnTypeConstants::position> qualified_positions_max;
     int num_qualified_tuples_max = 0;
+    Block<ColumnTypeConstants::position> qualified_positions_max_block(position_block_size);
 
     while (this->position_input_file.good())
     {
-        this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(GroupByYearMonthPosition));
+        // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * sizeof(GroupByYearMonthPosition));
+        bool status = positions_block.read_next_block(this->position_input_file);
 
-        for (int i = 0; i < positions.size(); ++i)
+        for (int i = 0; i < positions_block.num_elements; ++i)
         {
-            data_block.read_data(this->data_file, positions[i].position, false);
+            data_block.read_data(this->data_file, positions_block.block_data[i].position, false);
             std::vector<float> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
 
-            int index = positions[i].position - range.first;
+            int index = positions_block.block_data[i].position - range.first;
 
             float value = data[index];
 
             if (value == -1)
                 continue; // we encode -1 for missing values
 
-            std::string key(positions[i].key);
+            std::string key(positions_block.block_data[i].key);
 
             if (min_compare[key]->evaluate_expr(value))
             {
-                qualified_positions_min.push_back(positions[i].position);
+                // qualified_positions_min.push_back(positions_block.block_data[i].position);
+                qualified_positions_min_block.push_data(positions_block.block_data[i].position, num_qualified_tuples_min);
                 num_qualified_tuples_min++;
             }
             if (max_compare[key]->evaluate_expr(value))
             {
-                qualified_positions_max.push_back(positions[i].position);
+                // qualified_positions_max.push_back(positions_block.block_data[i].position);
+                qualified_positions_max_block.push_data(positions_block.block_data[i].position, num_qualified_tuples_max);
                 num_qualified_tuples_max++;
             }
 
-            if (num_qualified_tuples_min >= position_block_size / ColumnSizeConstants::position)
+            // if (num_qualified_tuples_min >= position_block_size / ColumnSizeConstants::position)
+            // {
+            //     min_output_pos.write(reinterpret_cast<char *>(qualified_positions_min.data()), qualified_positions_min.size() * ColumnSizeConstants::position);
+            //     num_qualified_tuples_min = 0;
+            //     qualified_positions_min.clear();
+            // }
+
+            // Min
+            if (qualified_positions_min_block.is_full(num_qualified_tuples_min))
             {
-                min_output_pos.write(reinterpret_cast<char *>(qualified_positions_min.data()), qualified_positions_min.size() * ColumnSizeConstants::position);
+                qualified_positions_min_block.write_data(min_output_pos);
                 num_qualified_tuples_min = 0;
-                qualified_positions_min.clear();
+                qualified_positions_min_block.clear();
             }
 
-            if (num_qualified_tuples_max >= position_block_size / ColumnSizeConstants::position)
+            // if (num_qualified_tuples_max >= position_block_size / ColumnSizeConstants::position)
+            // {
+            //     max_output_pos.write(reinterpret_cast<char *>(qualified_positions_max.data()), qualified_positions_max.size() * ColumnSizeConstants::position);
+            //     num_qualified_tuples_max = 0;
+            //     qualified_positions_max.clear();
+            // }
+
+            // Max
+            if (qualified_positions_max_block.is_full(num_qualified_tuples_max))
             {
-                max_output_pos.write(reinterpret_cast<char *>(qualified_positions_max.data()), qualified_positions_max.size() * ColumnSizeConstants::position);
+                qualified_positions_max_block.write_data(max_output_pos);
                 num_qualified_tuples_max = 0;
-                qualified_positions_max.clear();
+                qualified_positions_max_block.clear();
             }
         }
     }
 
+    // if (num_qualified_tuples_max > 0)
+    // {
+    //     max_output_pos.write(reinterpret_cast<char *>(qualified_positions_max.data()), qualified_positions_max.size() * ColumnSizeConstants::position);
+    //     num_qualified_tuples_max = 0;
+    //     qualified_positions_max.clear();
+    // }
+
     if (num_qualified_tuples_max > 0)
     {
-        max_output_pos.write(reinterpret_cast<char *>(qualified_positions_max.data()), qualified_positions_max.size() * ColumnSizeConstants::position);
-        num_qualified_tuples_max = 0;
-        qualified_positions_max.clear();
+        qualified_positions_min_block.write_data(min_output_pos);
+        num_qualified_tuples_min = 0;
+        qualified_positions_min_block.clear();
     }
+    // if (num_qualified_tuples_min > 0)
+    // {
+    //     min_output_pos.write(reinterpret_cast<char *>(qualified_positions_min.data()), qualified_positions_min.size() * ColumnSizeConstants::position);
+    //     num_qualified_tuples_min = 0;
+    //     qualified_positions_min.clear();
+    // }
     if (num_qualified_tuples_min > 0)
     {
-        min_output_pos.write(reinterpret_cast<char *>(qualified_positions_min.data()), qualified_positions_min.size() * ColumnSizeConstants::position);
-        num_qualified_tuples_min = 0;
-        qualified_positions_min.clear();
+        qualified_positions_max_block.write_data(max_output_pos);
+        num_qualified_tuples_max = 0;
+        qualified_positions_max_block.clear();
     }
 
     this->data_file.close();

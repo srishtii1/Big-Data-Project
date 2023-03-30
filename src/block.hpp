@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 
+#include "query_proccessor/groupby/groupbyyearmonthposition.hpp"
 #include "constants.hpp"
 
 template <typename T>
@@ -18,7 +19,6 @@ private:
     int block_size; // in bytes
     int start_position;
     int end_position;
-    int num_elements;
 
 public:
     /**
@@ -27,6 +27,7 @@ public:
      */
     std::vector<T> block_data;
     int curr_start_of_block;
+    int num_elements;
     Block();
     Block(int block_size);
     void read_data(std::ifstream &fin, int target_pos, bool verbose);
@@ -102,20 +103,19 @@ inline void Block<__int8>::print_value(__int8 ele)
 template <typename T>
 inline void Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose)
 {
-    int bytes_offset = target_pos * sizeof(T);
-    int block_offset = (bytes_offset % this->block_size) / sizeof(T);
-    int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
+    int start_block_num = target_pos / this->num_elements;
+    int start_of_block = start_block_num * this->block_size;
+    int block_offset = start_of_block + (target_pos % this->num_elements) * this->block_size;
+    // int block_offset = (bytes_offset % this->block_size) / sizeof(T);
+    // int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
 
     if (start_of_block == this->curr_start_of_block)
     {
         // std::cout << "Current block already contains target position.\n";
         return;
     }
-    else
-    {
-        // std::cout << "Reading Block\n";
-        this->curr_start_of_block = start_of_block;
-    }
+    // std::cout << "Reading Block\n";
+    this->curr_start_of_block = start_of_block;
 
     fin.seekg(start_of_block);
     fin.read(reinterpret_cast<char *>(this->block_data.data()), this->block_data.size() * sizeof(T));
@@ -199,8 +199,6 @@ inline bool Block<T>::read_next_block(std::ifstream &fin)
     int next_start_index = (this->curr_start_of_block == -1) ? 0 : (this->curr_start_of_block / sizeof(T) + this->num_elements);
     // if (next_start_index % 10000 == 0)
     //     std::cout << "Next start index:" << next_start_index << std::endl;
-    if (next_start_index > ProgramConstants::num_columns)
-        return false;
     this->read_data(fin, next_start_index, false);
     return true;
 }
