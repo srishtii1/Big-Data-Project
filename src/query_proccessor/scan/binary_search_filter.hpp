@@ -68,30 +68,16 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
 
             std::vector<T> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
-            
-            for (int i=0; i<data.size(); ++i)
-            {
-                if (pred->evaluate_expr(data[i]))
-                {
-                    required_pos = range.first + i;
 
-                    if (i != 0) 
-                    {
-                        done = true;
-                        break;
-                    }
-                    else {
-                        required_pos = range.first;
-                        break;
-                    }
-                }
+            if (pred->get_value() == data[0]) // possible first block
+            {
+                required_pos = range.first;
+                end = range.first - 1;
             }
 
-            if (done) break;
-            
-            if (pred->get_value() == data[0])
+            else if (pred->get_value() > data[data.size()-1])
             {
-                end = range.first - 1;
+                start = range.second + 1;
             }
 
             else if (pred->get_value() < data[0])
@@ -99,10 +85,18 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                 end = range.first - 1;
             }
 
-            else 
-            {
-                start = range.second + 1;
+            else { // The first tuple exists in this block
+                for (int i=0; i<data.size(); ++i)
+                {
+                    if (pred->evaluate_expr(data[i]))
+                    {
+                        required_pos = range.first + i;
+                        done = true;
+                        break;
+                    }
+                }
             }
+            if (done) break;
         }
 
         if (required_pos == -1) continue;
