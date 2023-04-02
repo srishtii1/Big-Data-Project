@@ -1,4 +1,7 @@
 #include "preprocessing.hpp"
+#include "block.hpp"
+#include "zonemap/Zone.hpp"
+#include "vector"
 
 // Group into 8s if x.size() % 8 != 0
 void binary_write(std::ofstream &fout, std::vector<bool> &x)
@@ -180,6 +183,7 @@ void preprocess_csv()
         }
 
         input_file.close();
+        std::cout<<file_map["year"]<<'\n';
     }
     else
     {
@@ -211,4 +215,74 @@ void preprocess_csv()
     // }
     std::cout << "\n";
     input_file.close();
+}
+
+#include <vector>
+void createZonemap(int block_size)
+{
+    std::ifstream yearDataStream ("data/column_store/" + FileNameConstants::year, std::ios::binary);
+    int num_records_per_block= block_size / ColumnSizeConstants::year;
+    Block<ColumnTypeConstants::year> year_read_block = Block<ColumnTypeConstants::year>(block_size);
+
+    std::ofstream zoneOutStream("data/zone_maps/year_zones.dat", std::ios::out | std::ios::binary);
+    std::unordered_map<int, Zone<ColumnTypeConstants::year>> zonemap; //std::map<std::int, std::any>
+    //Block<std::unordered_map<int, Zone<ColumnTypeConstants::year>>> write_block = Block<std::unordered_map<int, Zone<ColumnTypeConstants::year>>>(block_size);
+    Block<Zone<ColumnTypeConstants::year>> write_block = Block<Zone<ColumnTypeConstants::year>>(block_size);
+    //zoneOutStream.close();
+
+    int block_index = 0;
+    int blk_ptr = 0;
+    // Vector<Zone> zonemap = new Vector<Zone>();
+    for (int pos = 0; pos < ProgramConstants::num_rows; pos += num_records_per_block)
+    {
+         year_read_block.read_data(yearDataStream, pos, false);
+        //Since the dates are sorted, we can just check the first and last element of the block
+        //to determine the range of the block
+        ColumnTypeConstants::year year1 = year_read_block.block_data.front();
+        ColumnTypeConstants::year year2 = year_read_block.block_data.back();
+        // std::cout<<"year1: "<<year1<<" year2: "<<year2<<std::endl;
+        Zone<ColumnTypeConstants::year> zone = Zone(block_index, year1, year2);
+        //std::cout<<"zone: "<<zone.getBlockId()<<" "<<zone.getMin()<<" "<<zone.getMax()<<std::endl;
+        zonemap[block_index] = zone;
+        write_block.push_data(zone, blk_ptr);
+        blk_ptr ++;
+        if (write_block.is_full(blk_ptr))
+            {
+                write_block.write_data(zoneOutStream);
+                blk_ptr = 0;
+                write_block.clear();
+            }
+        
+        //write_pos += zoneBlock.block_data.size();
+        //std::fill(write_block.block_data.begin(), write_block.block_data.end(), -1);
+        block_index++;
+
+    }
+    if (blk_ptr != 0)
+    {
+        write_block.write_data(zoneOutStream);
+    }
+    yearDataStream.close();
+    zoneOutStream.close();
+}
+
+void readZonemap(int block_size)
+{
+    std::ifstream zoneInStream("data/zone_maps/year_zones.dat", std::ios::in | std::ios::binary);
+    int num_records_per_block= block_size / ColumnSizeConstants::year;
+    Block<Zone<ColumnTypeConstants::year>> zoneBlock = Block<Zone<ColumnTypeConstants::year>>(block_size);
+    std::cout << zoneBlock.block_data.size() << '\n';
+    int pos = 0;
+    while(!zoneInStream.eof())
+    {
+        zoneBlock.read_data(zoneInStream, pos, false);
+        for (int i = 0; i < zoneBlock.block_data.size(); i++)
+        {
+            Zone<ColumnTypeConstants::year> zone = zoneBlock.block_data[i];
+            std::cout << zoneBlock.block_data[i].getMin() << " " << zoneBlock.block_data[i].getMax() << " " << zoneBlock.block_data[i].getBlockId() << '\n';
+        }
+        pos += zoneBlock.block_data.size();
+    }
+    
+    zoneInStream.close();
 }

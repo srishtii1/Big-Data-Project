@@ -109,6 +109,8 @@ int main(int argc, char **argv)
         // test_reading(block_size, target_pos);
         QueryProcessor query_processor(block_size);
         query_processor.process_query(matriculation_number, query.year1, query.year2, query.city);
+        createZonemap(block_size);
+        readZonemap(block_size);
     }
 
     catch (const std::exception &exc)

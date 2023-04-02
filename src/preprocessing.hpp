@@ -11,8 +11,11 @@
 #include <iomanip>
 #include <locale>
 
+
 #include "constants.hpp"
 
 void preprocess_csv();
+void createZonemap(int block_size);
+void readZonemap(int block_size);
 
 #endif
