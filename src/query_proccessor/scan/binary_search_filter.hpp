@@ -75,17 +75,7 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                 end = range.first - 1;
             }
 
-            else if (pred->get_value() > data[data.size()-1])
-            {
-                start = range.second + 1;
-            }
-
-            else if (pred->get_value() < data[0])
-            {
-                end = range.first - 1;
-            }
-
-            else { // The first tuple exists in this block
+            else if (pred->get_value() > data[0] && pred->get_value() <=data[data.size()-1]) { // The first tuple exists in this block
                 for (int i=0; i<data.size(); ++i)
                 {
                     if (pred->evaluate_expr(data[i]))
@@ -96,8 +86,20 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                     }
                 }
             }
+
+            else if (pred->get_value() > data[data.size()-1])
+            {
+                start = range.second + 1;
+            }
+
+            else if (pred->get_value() < data[0])
+            {
+                end = range.first - 1;
+            }
+
             if (done) break;
         }
+
 
         if (required_pos == -1) continue;
 
@@ -128,7 +130,7 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
             else {
                 if (num_qualified_tuples > 0)
                 {
-                    qualified_positions_block.write_data(this->position_output_file);
+                    qualified_positions_block.write_data(this->position_output_file, num_qualified_tuples);
                     num_qualified_tuples = 0;
                     qualified_positions_block.clear();
                 }

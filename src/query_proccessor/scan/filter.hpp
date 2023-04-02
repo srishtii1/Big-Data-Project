@@ -44,15 +44,10 @@ void Filter<T>::process_filter(Predicate<T> &pred)
 
     while (this->position_input_file.good())
     {
-        // this->position_input_file.read(reinterpret_cast<char *>(positions.data()), positions.size() * ColumnSizeConstants::position);
         bool status = positions_block.read_next_block(this->position_input_file);
-        // if (!status)
-        //     break;
-        // positions_block.print_data();
 
         for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
-            // std::cout << "Position[i]" << positions_block.block_data[i] << std::endl;
             data_block.read_data(this->data_file, positions_block.block_data[i], false);
             std::vector<T> data = data_block.get_data();
             if (data.size() == 0) break;
@@ -64,20 +59,12 @@ void Filter<T>::process_filter(Predicate<T> &pred)
 
             if (pred.evaluate_expr(value))
             {
-                // std::cout << "Got qualified results" << std::endl;
                 qualified_positions_block.push_data(positions_block.block_data[i], num_qualified_tuples);
                 ++num_qualified_tuples;
-                // qualified_positions.push_back(positions_block.block_data[i]);
-                // if (num_qualified_tuples >= position_block_size / ColumnSizeConstants::position)
-                // {
-                //     this->position_output_file.write(reinterpret_cast<char *>(qualified_positions.data()), qualified_positions.size() * ColumnSizeConstants::position);
-                //     num_qualified_tuples = 0;
-                //     qualified_positions.clear();
-                // }
+
                 if (qualified_positions_block.is_full(num_qualified_tuples))
                 {
-                    // std::cout << "Block full" << std::endl;
-                    qualified_positions_block.write_data(this->position_output_file);
+                    qualified_positions_block.write_data(this->position_output_file, num_qualified_tuples);
                     num_qualified_tuples = 0;
                     qualified_positions_block.clear();
                 }
@@ -85,12 +72,6 @@ void Filter<T>::process_filter(Predicate<T> &pred)
         }
     }
 
-    // if (num_qualified_tuples > 0)
-    // {
-    //     this->position_output_file.write(reinterpret_cast<char *>(qualified_positions.data()), qualified_positions.size() * ColumnSizeConstants::position);
-    //     num_qualified_tuples = 0;
-    //     qualified_positions.clear();
-    // }
     if (num_qualified_tuples > 0)
     {
         qualified_positions_block.write_data(this->position_output_file, num_qualified_tuples);
