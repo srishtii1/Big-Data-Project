@@ -112,7 +112,7 @@ void preprocess_csv()
             auto timestamp = row[1];
 
             // YYYY-MM-DD HH:MM
-            ColumnTypeConstants::year year = (ColumnTypeConstants::year)std::stoi(timestamp.substr(0, 4));
+            ColumnTypeConstants::year year = (ColumnTypeConstants::year) (std::stoi(timestamp.substr(0, 4)));
             ColumnTypeConstants::month month = (ColumnTypeConstants::month)std::stoi(timestamp.substr(5, 2));
             ColumnTypeConstants::day day = (ColumnTypeConstants::day)std::stoi(timestamp.substr(8, 2));
 

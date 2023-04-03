@@ -74,14 +74,7 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
             GroupByYearMonthPosition key = GroupByYearMonthPosition(positions_block.block_data[i], 1900 + ltm->tm_year, 1 + ltm->tm_mon);
             qualified_positions_with_key_block.push_data(key, num_qualified_tuples);
             ++num_qualified_tuples;
-            // qualified_positions_with_key.push_back(key);
 
-            // if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
-            // {
-            //     this->position_key_output_file.write(reinterpret_cast<char *>(qualified_positions_with_key.data()), qualified_positions_with_key.size() * sizeof(GroupByYearMonthPosition));
-            //     num_qualified_tuples = 0;
-            //     qualified_positions_with_key.clear();
-            // }
             if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
             {
                 qualified_positions_with_key_block.write_data(this->position_key_output_file);
@@ -98,12 +91,6 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
         qualified_positions_with_key_block.write_data(this->position_key_output_file, num_qualified_tuples);
         num_qualified_tuples = 0;
     }
-    // if (qualified_positions_with_key_block.is_full(num_qualified_tuples))
-    // {
-    //     qualified_positions_with_key_block.write_data(this->position_key_output_file);
-    //     num_qualified_tuples = 0;
-    //     qualified_positions_with_key_block.clear();
-    // }
 
     this->position_input_file.close();
     this->position_key_output_file.close();
@@ -238,13 +225,6 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
                 num_qualified_tuples_max++;
             }
 
-            // if (num_qualified_tuples_min >= position_block_size / ColumnSizeConstants::position)
-            // {
-            //     min_output_pos.write(reinterpret_cast<char *>(qualified_positions_min.data()), qualified_positions_min.size() * ColumnSizeConstants::position);
-            //     num_qualified_tuples_min = 0;
-            //     qualified_positions_min.clear();
-            // }
-
             // Min
             if (qualified_positions_min_block.is_full(num_qualified_tuples_min))
             {
@@ -252,13 +232,6 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
                 num_qualified_tuples_min = 0;
                 qualified_positions_min_block.clear();
             }
-
-            // if (num_qualified_tuples_max >= position_block_size / ColumnSizeConstants::position)
-            // {
-            //     max_output_pos.write(reinterpret_cast<char *>(qualified_positions_max.data()), qualified_positions_max.size() * ColumnSizeConstants::position);
-            //     num_qualified_tuples_max = 0;
-            //     qualified_positions_max.clear();
-            // }
 
             // Max
             if (qualified_positions_max_block.is_full(num_qualified_tuples_max))
@@ -270,25 +243,13 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
         }
     }
 
-    // if (num_qualified_tuples_max > 0)
-    // {
-    //     max_output_pos.write(reinterpret_cast<char *>(qualified_positions_max.data()), qualified_positions_max.size() * ColumnSizeConstants::position);
-    //     num_qualified_tuples_max = 0;
-    //     qualified_positions_max.clear();
-    // }
-
     if (num_qualified_tuples_min > 0)
     {
         qualified_positions_min_block.write_data(min_output_pos, num_qualified_tuples_min);
         num_qualified_tuples_min = 0;
         qualified_positions_min_block.clear();
     }
-    // if (num_qualified_tuples_min > 0)
-    // {
-    //     min_output_pos.write(reinterpret_cast<char *>(qualified_positions_min.data()), qualified_positions_min.size() * ColumnSizeConstants::position);
-    //     num_qualified_tuples_min = 0;
-    //     qualified_positions_min.clear();
-    // }
+
     if (num_qualified_tuples_max > 0)
     {
         qualified_positions_max_block.write_data(max_output_pos, num_qualified_tuples_max);
