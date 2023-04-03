@@ -106,9 +106,14 @@ int main(int argc, char **argv)
         Query query = parse_query(matriculation_number);
         std::cout << "Query: " << query.year1 << " " << query.year2 << " " << query.city << std::endl;
         preprocess_csv();
+        createZonemap(block_size);
+        std::cout<<"Finished preprocessing"<<std::endl;
         // test_reading(block_size, target_pos);
         QueryProcessor query_processor(block_size);
-        query_processor.process_query(matriculation_number, query.year1, query.year2, query.city);
+        //query_processor.process_query(matriculation_number, query.year1, query.year2, query.city, "Binary Search");
+        query_processor.process_query(matriculation_number, query.year1, query.year2, query.city, "Zone Map");
+        
+        //readZonemap(block_size);
     }
 
     catch (const std::exception &exc)

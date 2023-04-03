@@ -47,6 +47,7 @@ namespace ColumnTypeConstants
     typedef float temperature;
     typedef float humidity;
     typedef uint32_t position;
+    typedef uint32_t block_id;
 }
 
 namespace ColumnSizeConstants
@@ -64,6 +65,7 @@ namespace ColumnSizeConstants
     const int humidity = sizeof(ColumnTypeConstants::humidity);
 
     const int position = sizeof(ColumnTypeConstants::position);
+    const int Zone = year + year + sizeof(ColumnTypeConstants::block_id);
 }
 
 namespace ProgramConstants
