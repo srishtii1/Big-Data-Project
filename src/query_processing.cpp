@@ -123,32 +123,19 @@ void QueryProcessor::print_year_pos()
     }
 }
 
-void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city, const char* yearFilterType)
+void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city, std::string yearFilterType)
 {
-    
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/positions.dat", std::ios::binary);
-    // while(ifile.good())
-    // {
-    //     uint32_t idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx << '\n';
-    // }
-    // ifile.close();
-    // return;
 
-    // AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
-    // AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
-    // OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
-    if (strcmp(yearFilterType,"Binary Search") == 0)
+    // Filer Year
+    if (yearFilterType == "BinarySearch")
     {
         AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
         AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
 
         BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
-        year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
+        year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows, true);
     }
-    else if (strcmp(yearFilterType,"Zone Map") == 0)
+    else if (yearFilterType == "ZoneMap")
     {
         AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>("<=", year1);
         AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>(">=", year1);
@@ -159,120 +146,60 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
         std::pair<AtomicPredicate<ColumnTypeConstants::year>, AtomicPredicate<ColumnTypeConstants::year>> year2Cutoff = std::make_pair(lowerCutOffYear2, upperCutOffYear2);
 
         ZonemapFilter<ColumnTypeConstants::year> year_filter_zonemap = ZonemapFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", "data/zone_maps/year_zones.dat", this->block_size);
-        year_filter_zonemap.process_filter({year1Cutoff, year2Cutoff});
+        year_filter_zonemap.process_filter({year1Cutoff, year2Cutoff}, true);
     }
     else{
-        std::cout<<"Invalid year filter type";
-        return;
+        AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
+        AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+        OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
+        Filter<ColumnTypeConstants::year> year_filter = Filter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
+        year_filter.process_filter(orPred, true);
     }
-
-    // Filter Year
-    // Filter<ColumnTypeConstants::year> year_filter = Filter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
-    // // year_filter.process_filter(orPred);
-
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/temp1.dat", std::ios::binary);
-    // while(ifile.good())
-    // {
-    //     uint32_t idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx << '\n';
-    // }
-    // ifile.close();
-
-    // return;
-
-
-
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/temp1.dat", std::ios::binary);
-    // while(ifile.good())
-    // {
-    //     uint32_t idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx << '\n';
-    // }
-    // ifile.close();
-
-    // return;
 
     // Filter City
     AtomicPredicate<ColumnTypeConstants::city> p3 = AtomicPredicate<ColumnTypeConstants::city>("=", city);
     Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
     city_filter.process_filter(p3);
 
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/temp2.dat", std::ios::binary);
-    // while(ifile.good())
-    // {
-    //     uint32_t idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx << '\n';
-    // }
-    // ifile.close();
-
-    // return;
 
     // Save Group By Key for the required positions along with posiiton
-
     GroupBy groupby_year_month = GroupBy(this->block_size);
     groupby_year_month.save_groupby_key("data/column_store/temp/temp2.dat", "data/column_store/temp/temp3.dat", "data/column_store/raw_timestamp_encoded.dat");
 
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/temp3.dat", std::ios::binary);
-    // while(ifile.good())
-    // {
-    //     GroupByYearMonthPosition idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx.key << " : " << idx.position << '\n';
-    // }
-    // ifile.close();
-
-    // return;
-
+    // Perform aggregation and filter rows for temperature
     std::map<std::string, ColumnTypeConstants::temperature> min_temp;
     std::map<std::string, ColumnTypeConstants::temperature> max_temp;
     groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_temp.dat", "data/column_store/temp/min_temp.dat", "data/column_store/temperature_encoded.dat", min_temp, max_temp);
 
-    // std::ifstream ifile;
-    // ifile.open("data/column_store/temp/max_temp.dat", std::ios::binary);
-    // while(ifile.good())
+
+    // std::cout << "\nMin Temp\n";
+    // for (auto it = min_temp.begin(); it != min_temp.end(); ++it)
     // {
-    //     int idx;
-    //     ifile.read((char*)&idx, sizeof(idx));
-    //     std::cout << idx << '\n';
+    //     std::cout << it->first << " : " << it->second << '\n';
     // }
-    // ifile.close();
-    // return;
 
+    // std::cout << "\nMax Temp\n";
+    // for (auto it = max_temp.begin(); it != max_temp.end(); ++it)
+    // {
+    //     std::cout << it->first << " : " << it->second << '\n';
+    // }
 
-    std::cout << "\nMin Temp\n";
-    for (auto it = min_temp.begin(); it != min_temp.end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << '\n';
-    }
-
-    std::cout << "\nMax Temp\n";
-    for (auto it = max_temp.begin(); it != max_temp.end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << '\n';
-    }
-
+    // Perform aggregation and filter rows for humidity
     std::map<std::string, ColumnTypeConstants::humidity> min_humid;
     std::map<std::string, ColumnTypeConstants::humidity> max_humid;
     groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_humid.dat", "data/column_store/temp/min_humid.dat", "data/column_store/humidity_encoded.dat", min_humid, max_humid);
 
-    std::cout << "\nMin Humid\n";
-    for (auto it = min_humid.begin(); it != min_humid.end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << '\n';
-    }
+    // std::cout << "\nMin Humid\n";
+    // for (auto it = min_humid.begin(); it != min_humid.end(); ++it)
+    // {
+    //     std::cout << it->first << " : " << it->second << '\n';
+    // }
 
-    std::cout << "\nMax Humid\n";
-    for (auto it = max_humid.begin(); it != max_humid.end(); ++it)
-    {
-        std::cout << it->first << " : " << it->second << '\n';
-    }
+    // std::cout << "\nMax Humid\n";
+    // for (auto it = max_humid.begin(); it != max_humid.end(); ++it)
+    // {
+    //     std::cout << it->first << " : " << it->second << '\n';
+    // }
 
     std::string output_file_name = "data/output/ScanResult_" + matric_num + ".csv";
 

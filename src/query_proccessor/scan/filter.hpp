@@ -17,7 +17,7 @@ private:
 public:
     Filter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, int block_size);
     ~Filter();
-    void process_filter(Predicate<T> &predicate); // Use the templates here
+    void process_filter(Predicate<T> &predicate, bool verbose=false); // Use the templates here
 };
 
 template <typename T>
@@ -30,7 +30,7 @@ Filter<T>::Filter(std::string position_input_file_name, std::string position_out
 }
 
 template <typename T>
-void Filter<T>::process_filter(Predicate<T> &pred)
+void Filter<T>::process_filter(Predicate<T> &pred, bool verbose)
 {
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
@@ -42,13 +42,18 @@ void Filter<T>::process_filter(Predicate<T> &pred)
     std::vector<ColumnTypeConstants::position> qualified_positions;
     int num_qualified_tuples = 0;
 
+    int num_data_ios = 0;
+
     while (this->position_input_file.good())
     {
         bool status = positions_block.read_next_block(this->position_input_file);
 
         for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
-            data_block.read_data(this->data_file, positions_block.block_data[i], false);
+            bool read = data_block.read_data(this->data_file, positions_block.block_data[i], false);
+
+            if (read) ++num_data_ios;
+
             std::vector<T> data = data_block.get_data();
             if (data.size() == 0) break;
             std::pair<int, int> range = data_block.get_range();
@@ -82,6 +87,8 @@ void Filter<T>::process_filter(Predicate<T> &pred)
     this->position_input_file.close();
     this->position_output_file.close();
     this->data_file.close();
+
+    if(verbose) std::cout << "Number of Data IOs: " << num_data_ios << '\n';
 }
 
 template <typename T>

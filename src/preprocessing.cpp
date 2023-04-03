@@ -224,8 +224,9 @@ void createZonemap(int block_size)
 {
     std::ifstream yearDataStream ("data/column_store/" + FileNameConstants::year, std::ios::binary);
     int num_records_per_block= block_size / ColumnSizeConstants::year;
+    std::cout << "Num Records per block: " << num_records_per_block <<'\n';
     Block<ColumnTypeConstants::year> year_read_block = Block<ColumnTypeConstants::year>(block_size);
-    std::ofstream zoneOutStream ("data/year_zones.dat", std::ios::out | std::ios::binary);
+    std::ofstream zoneOutStream ("data/zone_maps/year_zones.dat", std::ios::out | std::ios::binary);
     Block<Zone<ColumnTypeConstants::year>> write_block = Block<Zone<ColumnTypeConstants::year>>(block_size);
 
     int block_index = 0;
@@ -242,18 +243,18 @@ void createZonemap(int block_size)
         write_block.push_data(zone, blk_ptr);
         blk_ptr ++;
         if (write_block.is_full(blk_ptr))
-            {
-                write_block.write_data(zoneOutStream);
-                blk_ptr = 0;
-                write_block.clear();
-            }
-        
-        block_index++;
+        {
+            write_block.write_data(zoneOutStream, blk_ptr);
+            blk_ptr = 0;
+            write_block.clear();
+        }
 
+        block_index++;
+        
     }
     if (blk_ptr != 0)
     {
-        write_block.write_data(zoneOutStream);
+        write_block.write_data(zoneOutStream, blk_ptr);
     }
     yearDataStream.close();
     zoneOutStream.close();

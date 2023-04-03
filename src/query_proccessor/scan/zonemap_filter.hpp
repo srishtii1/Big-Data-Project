@@ -21,7 +21,7 @@ private:
 public:
     ZonemapFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name,std::string zonemap_file, int block_size);
     ~ZonemapFilter();
-    void process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds); // Use the templates here
+    void process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds, bool verbose=false); // Use the templates here
 };
 
 template <typename T>
@@ -40,7 +40,7 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
         bool status = zone_block.read_next_block(this->zonemap_file);
         if (!status)
         {
-            std::cout<<"Error reading zonemap file"<<std::endl;
+            //std::cout<<"Error reading zonemap file"<<std::endl;
             break;
         }
         for (int i = 0; i < zone_block.get_data().size(); i++)
@@ -48,10 +48,12 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
             this->zones.push_back(zone_block.block_data[i]);
         }
     }
+
+    std::cout << "Number of zones: " << this->zones.size() << '\n';
 }
 
 template <typename T>
-void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds)
+void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds, bool verbose)
 {
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
@@ -63,6 +65,8 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
     std::vector<ColumnTypeConstants::position> qualified_positions;
     std::vector<int> qualified_block_indices;
     int num_qualified_tuples = 0;
+
+    int num_data_ios = 0;
     
     for(int block_index = 0; block_index<zones.size(); ++block_index)
     {
@@ -74,6 +78,7 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
             auto pred_pair = preds[i];
             if ((pred_pair.first.evaluate_expr(ZoneMin) && pred_pair.second.evaluate_expr(ZoneMax)))
             {
+                // std::cout << "ZoneMap: " << block_index << " = "<< ZoneMin << ", " << ZoneMax << '\n';
                 qualified_block_indices.push_back(block_index);
                 break;
             }
@@ -82,10 +87,13 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
     
     int block_index = 0;
     int req_block_start_position;
-    while (this->position_input_file.good() && block_index < qualified_block_indices.size())
+    while (block_index < qualified_block_indices.size())
     {
-        req_block_start_position = qualified_block_indices[block_index]*data_block.num_elements;
-        data_block.read_data(this->data_file, req_block_start_position, false);
+        req_block_start_position = qualified_block_indices[block_index] * data_block.num_elements;
+
+        bool read = data_block.read_data(this->data_file, req_block_start_position, false);
+        
+        if (read) ++num_data_ios;
         
         std::vector<T> data = data_block.get_data();
         if (data.size() == 0) break;
@@ -126,6 +134,8 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
     this->position_input_file.close();
     this->position_output_file.close();
     this->data_file.close();
+
+    if (verbose) std::cout << "Number of Data IOs: " << num_data_ios << '\n'; 
 }
 
 template <typename T>

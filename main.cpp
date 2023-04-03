@@ -97,11 +97,10 @@ int main(int argc, char **argv)
 {
     try
     {
-        assert(argc == 4);
+        assert(argc == 3);
 
         std::string matriculation_number = argv[1];
         int block_size = atoi(argv[2]);
-        int target_pos = atoi(argv[3]);
 
         Query query = parse_query(matriculation_number);
         std::cout << "Query: " << query.year1 << " " << query.year2 << " " << query.city << std::endl;
@@ -111,9 +110,13 @@ int main(int argc, char **argv)
 
         QueryProcessor query_processor(block_size);
 
-        query_processor.process_query(matriculation_number, query.year1, query.year2, query.city, "Zone Map");
-        
-        //readZonemap(block_size);
+        std::vector<std::string> algos = {"Filter", "BinarySearch", "ZoneMap"};
+
+        for (auto algo : algos)
+        {
+            query_processor.process_query(algo + "_" + matriculation_number, query.year1, query.year2, query.city, algo);
+        }
+
     }
 
     catch (const std::exception &exc)

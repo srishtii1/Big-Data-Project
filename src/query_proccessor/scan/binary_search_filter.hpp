@@ -18,7 +18,7 @@ private:
 public:
     BinarySearchFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, int block_size);
     ~BinarySearchFilter();
-    void process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end);
+    void process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose=false);
 };
 
 template <typename T>
@@ -30,9 +30,12 @@ BinarySearchFilter<T>::BinarySearchFilter(std::string position_input_file_name, 
     this->block_size = block_size;
 }
 
+
+// Find correct block position for each atomic predicate
+// Binary search will only work for >, <, <=, >= since these can be represented as increasing and decreasing functions
+// For = we need to compare with current value
 template <typename T>
-// Need to determine the start and end in a different way
-void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end) 
+void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose) 
 {
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
@@ -44,12 +47,10 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
     std::vector<ColumnTypeConstants::position> qualified_positions;
     int num_qualified_tuples = 0;
 
-    // Find correct block position for each atomic predicate
-    // Binary search will only work for >, <, <=, >= since these can be represented as increasing and decreasing functions
-    // For = we need to compare with current value
-
     int start_copy = start;
     int end_copy = end;
+
+    int num_data_ios = 0;
 
     for (auto pred = preds.begin(); pred != preds.end(); ++pred)
     {
@@ -64,7 +65,9 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
         {
             int mid = start + (end - start) / 2;
 
-            data_block.read_data(this->data_file, mid, false);
+            bool read = data_block.read_data(this->data_file, mid, false);
+
+            if (read) ++num_data_ios;
 
             std::vector<T> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
@@ -105,7 +108,9 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
 
         while (true)
         {
-            data_block.read_data(this->data_file, required_pos, false);
+            bool read = data_block.read_data(this->data_file, required_pos, false);
+
+            if (read) ++num_data_ios;
 
             std::vector<T> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
@@ -143,6 +148,8 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
     this->position_input_file.close();
     this->position_output_file.close();
     this->data_file.close();
+
+    if (verbose) std::cout << "Number of Data IOs: " << num_data_ios << '\n';
 }
 
 template <typename T>
