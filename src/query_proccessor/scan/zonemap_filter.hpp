@@ -77,35 +77,32 @@ void ZonemapFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds)
         if ((preds[0].evaluate_expr(ZoneMin) && preds[1].evaluate_expr(ZoneMax)) || (preds[2].evaluate_expr(ZoneMin) && preds[3].evaluate_expr(ZoneMax)))
         {
             qualified_block_indices.push_back(block_index);
+            // debug
             // std::cout<<"Block "<<block_index<<" qualified"<<std::endl;
             // std::cout<<"ZoneMin: "<<ZoneMin<<" ZoneMax: "<<ZoneMax<<std::endl;
         }
     }
     
     int block_index = 0;
-    int reading_ptr;
+    int req_block_start_position;
     while (this->position_input_file.good() && block_index < qualified_block_indices.size())
     {
-        // bool status = positions_block.read_next_block(this->position_input_file);
 
-        // for (int i = 0; i < positions_block.get_data().size(); ++i)
-        // {
-            reading_ptr = qualified_block_indices[block_index]*data_block.num_elements;
-            // if (positions_block.block_data[i] == reading_ptr)
-            // {
-                // std::cout<<"Reading block "<<qualified_block_indices[index]<<std::endl;
-                data_block.read_data(this->data_file, reading_ptr, false);
-                block_index++;
-                std::vector<T> data = data_block.get_data();
-                if (data.size() == 0) break;
-                std::pair<int, int> range = data_block.get_range();
+            req_block_start_position = qualified_block_indices[block_index]*data_block.num_elements;
+            data_block.read_data(this->data_file, req_block_start_position, false);
+            
+            std::vector<T> data = data_block.get_data();
+            if (data.size() == 0) break;
+           
+            std::pair<int, int> range = data_block.get_range();
 
-                int data_index = reading_ptr - range.first;
-
+            int data_index = req_block_start_position - range.first;
+            while(data_index < data_block.num_elements)
+            {
                 T value = data[data_index];
                 if((preds[0].evaluate_expr(value) && preds[1].evaluate_expr(value))|| (preds[2].evaluate_expr(value) && preds[3].evaluate_expr(value)))
                 {
-                    qualified_positions_block.push_data(reading_ptr, num_qualified_tuples);
+                    qualified_positions_block.push_data(req_block_start_position + data_index, num_qualified_tuples);
                     ++num_qualified_tuples; 
                     if (qualified_positions_block.is_full(num_qualified_tuples))
                     {
@@ -114,10 +111,9 @@ void ZonemapFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds)
                         qualified_positions_block.clear();
                     }
                 }
-                                
-            // }
-            
-        // }
+                data_index++;
+            }
+            block_index++;
     }
 
     if (num_qualified_tuples > 0)
@@ -140,4 +136,4 @@ ZonemapFilter<T>::~ZonemapFilter()
     this->data_file.close();
 }
 
-#endif // FILTER_H
+#endif // ZONEMAPFILTER_H
