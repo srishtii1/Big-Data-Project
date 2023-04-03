@@ -135,6 +135,7 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     //     std::cout << idx << '\n';
     // }
     // ifile.close();
+    // return;
 
     // AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
     // AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
@@ -143,6 +144,7 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     {
         AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
         AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+
         BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
         year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
     }
@@ -175,7 +177,21 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     // ifile.close();
 
     // return;
-    
+
+
+
+    // std::ifstream ifile;
+    // ifile.open("data/column_store/temp/temp1.dat", std::ios::binary);
+    // while(ifile.good())
+    // {
+    //     uint32_t idx;
+    //     ifile.read((char*)&idx, sizeof(idx));
+    //     std::cout << idx << '\n';
+    // }
+    // ifile.close();
+
+    // return;
+
     // Filter City
     AtomicPredicate<ColumnTypeConstants::city> p3 = AtomicPredicate<ColumnTypeConstants::city>("=", city);
     Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);

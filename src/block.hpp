@@ -158,9 +158,13 @@ inline void Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
 template <>
 inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verbose)
 {
-    int bytes_offset = target_pos / 8; // starting byte number
-    int block_offset = target_pos % (this->block_size * 8);
-    int start_of_block = (bytes_offset / this->block_size) * this->block_size;
+    // int bytes_offset = target_pos / 8; // starting byte number
+    // int block_offset = target_pos % (this->block_size * 8);
+    // int start_of_block = (bytes_offset / this->block_size) * this->block_size;
+
+    int start_block_num = target_pos / this->num_elements;
+    int start_of_block = start_block_num * (this->block_size);
+    int block_offset = target_pos % this->num_elements;
 
     if (start_of_block == this->curr_start_of_block)
     {
@@ -190,7 +194,7 @@ inline void Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
             this->block_data[idx * 8 + i] = x.at(i);
     }
 
-    this->start_position = (start_of_block / this->block_size) * (this->block_size * 8);
+    this->start_position = start_block_num * this->num_elements;
     this->end_position = start_position + this->block_data.size();
 
     if (verbose)
