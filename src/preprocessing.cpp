@@ -217,22 +217,20 @@ void preprocess_csv()
     input_file.close();
 }
 
-#include <vector>
+/*
+This function creates a zone map for the year column and saves the zone map to disk
+*/
 void createZonemap(int block_size)
 {
     std::ifstream yearDataStream ("data/column_store/" + FileNameConstants::year, std::ios::binary);
     int num_records_per_block= block_size / ColumnSizeConstants::year;
     Block<ColumnTypeConstants::year> year_read_block = Block<ColumnTypeConstants::year>(block_size);
-
     std::ofstream zoneOutStream("data/zone_maps/year_zones.dat", std::ios::out | std::ios::binary);
-    std::unordered_map<int, Zone<ColumnTypeConstants::year>> zonemap; //std::map<std::int, std::any>
-    //Block<std::unordered_map<int, Zone<ColumnTypeConstants::year>>> write_block = Block<std::unordered_map<int, Zone<ColumnTypeConstants::year>>>(block_size);
     Block<Zone<ColumnTypeConstants::year>> write_block = Block<Zone<ColumnTypeConstants::year>>(block_size);
-    //zoneOutStream.close();
 
     int block_index = 0;
     int blk_ptr = 0;
-    // Vector<Zone> zonemap = new Vector<Zone>();
+
     for (int pos = 0; pos < ProgramConstants::num_rows; pos += num_records_per_block)
     {
          year_read_block.read_data(yearDataStream, pos, false);
@@ -240,10 +238,7 @@ void createZonemap(int block_size)
         //to determine the range of the block
         ColumnTypeConstants::year year1 = year_read_block.block_data.front();
         ColumnTypeConstants::year year2 = year_read_block.block_data.back();
-        // std::cout<<"year1: "<<year1<<" year2: "<<year2<<std::endl;
         Zone<ColumnTypeConstants::year> zone = Zone(block_index, year1, year2);
-        //std::cout<<"zone: "<<zone.getBlockId()<<" "<<zone.getMin()<<" "<<zone.getMax()<<std::endl;
-        zonemap[block_index] = zone;
         write_block.push_data(zone, blk_ptr);
         blk_ptr ++;
         if (write_block.is_full(blk_ptr))
@@ -253,8 +248,6 @@ void createZonemap(int block_size)
                 write_block.clear();
             }
         
-        //write_pos += zoneBlock.block_data.size();
-        //std::fill(write_block.block_data.begin(), write_block.block_data.end(), -1);
         block_index++;
 
     }
@@ -266,6 +259,9 @@ void createZonemap(int block_size)
     zoneOutStream.close();
 }
 
+/*
+This function reads the zone map from disk and prints it to the console
+*/
 void readZonemap(int block_size)
 {
     std::ifstream zoneInStream("data/zone_maps/year_zones.dat", std::ios::in | std::ios::binary);

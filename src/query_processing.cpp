@@ -2,12 +2,14 @@
 #include "query_proccessor/scan/predicate.hpp"
 #include "query_proccessor/scan/filter.hpp"
 #include "query_proccessor/scan/binary_search_filter.hpp"
+#include "query_proccessor/scan/zonemap_filter.hpp"
 #include "query_proccessor/groupby/groupby.hpp"
 
 #include "query_proccessor/projection.hpp"
 
 #include <map>
-
+#include <cstring>
+#include <iostream>
 QueryProcessor::QueryProcessor(int block_size)
 {
     this->block_size = block_size;
@@ -121,7 +123,7 @@ void QueryProcessor::print_year_pos()
     }
 }
 
-void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city)
+void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city, const char* yearFilterType)
 {
     
     // std::ifstream ifile;
@@ -137,9 +139,26 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     // AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
     // AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
     // OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
-
-    AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
-    AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+    if (strcmp(yearFilterType,"Binary Search") == 0)
+    {
+        AtomicPredicate<ColumnTypeConstants::year> p1 = AtomicPredicate<ColumnTypeConstants::year>("=", year1);
+        AtomicPredicate<ColumnTypeConstants::year> p2 = AtomicPredicate<ColumnTypeConstants::year>("=", year2);
+        BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
+        year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
+    }
+    else if (strcmp(yearFilterType,"Zone Map") == 0)
+    {
+        AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>("<=", year1);
+        AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>(">=", year1);
+        AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear2 = AtomicPredicate<ColumnTypeConstants::year>("<=", year2);
+        AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear2 = AtomicPredicate<ColumnTypeConstants::year>(">=", year2);
+        ZonemapFilter<ColumnTypeConstants::year> year_filter_zonemap = ZonemapFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", "data/zone_maps/year_zones.dat", this->block_size);
+        year_filter_zonemap.process_filter({lowerCutOffYear1, upperCutOffYear1, lowerCutOffYear2, upperCutOffYear2});
+    }
+    else{
+        std::cout<<"Invalid year filter type";
+        return;
+    }
 
     // Filter Year
     // Filter<ColumnTypeConstants::year> year_filter = Filter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
@@ -156,13 +175,11 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     // ifile.close();
 
     // return;
-    BinarySearchFilter<ColumnTypeConstants::year> year_filer_binary_search = BinarySearchFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", this->block_size);
-    year_filer_binary_search.process_filter({p1, p2}, 0, ProgramConstants::num_rows);
-
+    
     // Filter City
     AtomicPredicate<ColumnTypeConstants::city> p3 = AtomicPredicate<ColumnTypeConstants::city>("=", city);
-    // Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
-    // city_filter.process_filter(p3);
+    Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
+    city_filter.process_filter(p3);
 
     // std::ifstream ifile;
     // ifile.open("data/column_store/temp/temp2.dat", std::ios::binary);
