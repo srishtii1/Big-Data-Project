@@ -21,7 +21,7 @@ private:
 public:
     ZonemapFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name,std::string zonemap_file, int block_size);
     ~ZonemapFilter();
-    void process_filter(std::vector<AtomicPredicate<T>> preds); // Use the templates here
+    void process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds); // Use the templates here
 };
 
 template <typename T>
@@ -51,14 +51,8 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
 }
 
 template <typename T>
-void ZonemapFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds)
+void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds)
 {
-    if(preds.size() < 4)
-    {
-        std::cout << "Not enough predicates for zonemap filter" << std::endl;
-        return;
-    }
-
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
     std::vector<ColumnTypeConstants::position> positions(position_block_size / ColumnSizeConstants::position);
@@ -74,12 +68,15 @@ void ZonemapFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds)
     {
         T ZoneMin = this->zones[block_index].getMin();
         T ZoneMax = this->zones[block_index].getMax();
-        if ((preds[0].evaluate_expr(ZoneMin) && preds[1].evaluate_expr(ZoneMax)) || (preds[2].evaluate_expr(ZoneMin) && preds[3].evaluate_expr(ZoneMax)))
+
+        for (int i = 0; i < preds.size(); ++i)
         {
-            qualified_block_indices.push_back(block_index);
-            // debug
-            // std::cout<<"Block "<<block_index<<" qualified"<<std::endl;
-            // std::cout<<"ZoneMin: "<<ZoneMin<<" ZoneMax: "<<ZoneMax<<std::endl;
+            auto pred_pair = preds[i];
+            if ((pred_pair.first.evaluate_expr(ZoneMin) && pred_pair.second.evaluate_expr(ZoneMax)))
+            {
+                qualified_block_indices.push_back(block_index);
+                break;
+            }
         }
     }
     
@@ -87,20 +84,22 @@ void ZonemapFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds)
     int req_block_start_position;
     while (this->position_input_file.good() && block_index < qualified_block_indices.size())
     {
+        req_block_start_position = qualified_block_indices[block_index]*data_block.num_elements;
+        data_block.read_data(this->data_file, req_block_start_position, false);
+        
+        std::vector<T> data = data_block.get_data();
+        if (data.size() == 0) break;
+        
+        std::pair<int, int> range = data_block.get_range();
 
-            req_block_start_position = qualified_block_indices[block_index]*data_block.num_elements;
-            data_block.read_data(this->data_file, req_block_start_position, false);
-            
-            std::vector<T> data = data_block.get_data();
-            if (data.size() == 0) break;
-           
-            std::pair<int, int> range = data_block.get_range();
-
-            int data_index = req_block_start_position - range.first;
-            while(data_index < data_block.num_elements)
+        int data_index = req_block_start_position - range.first;
+        while(data_index < data_block.num_elements)
+        {
+            T value = data[data_index];
+            for (int i=0; i<preds.size(); ++i)
             {
-                T value = data[data_index];
-                if((preds[0].evaluate_expr(value) && preds[1].evaluate_expr(value))|| (preds[2].evaluate_expr(value) && preds[3].evaluate_expr(value)))
+                auto pred_pair = preds[i];
+                if ((pred_pair.first.evaluate_expr(value) && pred_pair.second.evaluate_expr(value)))
                 {
                     qualified_positions_block.push_data(req_block_start_position + data_index, num_qualified_tuples);
                     ++num_qualified_tuples; 
@@ -111,9 +110,10 @@ void ZonemapFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds)
                         qualified_positions_block.clear();
                     }
                 }
-                data_index++;
             }
-            block_index++;
+            data_index++;
+        }
+        block_index++;
     }
 
     if (num_qualified_tuples > 0)

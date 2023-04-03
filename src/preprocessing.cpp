@@ -225,7 +225,7 @@ void createZonemap(int block_size)
     std::ifstream yearDataStream ("data/column_store/" + FileNameConstants::year, std::ios::binary);
     int num_records_per_block= block_size / ColumnSizeConstants::year;
     Block<ColumnTypeConstants::year> year_read_block = Block<ColumnTypeConstants::year>(block_size);
-    std::ofstream zoneOutStream("data/zone_maps/year_zones.dat", std::ios::out | std::ios::binary);
+    std::ofstream zoneOutStream ("data/year_zones.dat", std::ios::out | std::ios::binary);
     Block<Zone<ColumnTypeConstants::year>> write_block = Block<Zone<ColumnTypeConstants::year>>(block_size);
 
     int block_index = 0;
@@ -233,7 +233,7 @@ void createZonemap(int block_size)
 
     for (int pos = 0; pos < ProgramConstants::num_rows; pos += num_records_per_block)
     {
-         year_read_block.read_data(yearDataStream, pos, false);
+        year_read_block.read_data(yearDataStream, pos, false);
         //Since the dates are sorted, we can just check the first and last element of the block
         //to determine the range of the block
         ColumnTypeConstants::year year1 = year_read_block.block_data.front();

@@ -152,10 +152,14 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     {
         AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>("<=", year1);
         AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>(">=", year1);
+        std::pair<AtomicPredicate<ColumnTypeConstants::year>, AtomicPredicate<ColumnTypeConstants::year>> year1Cutoff = std::make_pair(lowerCutOffYear1, upperCutOffYear1);
+
         AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear2 = AtomicPredicate<ColumnTypeConstants::year>("<=", year2);
         AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear2 = AtomicPredicate<ColumnTypeConstants::year>(">=", year2);
+        std::pair<AtomicPredicate<ColumnTypeConstants::year>, AtomicPredicate<ColumnTypeConstants::year>> year2Cutoff = std::make_pair(lowerCutOffYear2, upperCutOffYear2);
+
         ZonemapFilter<ColumnTypeConstants::year> year_filter_zonemap = ZonemapFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", "data/zone_maps/year_zones.dat", this->block_size);
-        year_filter_zonemap.process_filter({lowerCutOffYear1, upperCutOffYear1, lowerCutOffYear2, upperCutOffYear2});
+        year_filter_zonemap.process_filter({year1Cutoff, year2Cutoff});
     }
     else{
         std::cout<<"Invalid year filter type";
