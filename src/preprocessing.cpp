@@ -107,9 +107,9 @@ void preprocess_csv()
             ++idx;
 
             if (row[3] == "M")
-                row[3] = "-1.00";
+                row[3] = "-1000.00";
             if (row[4] == "M")
-                row[4] = "-1.00";
+                row[4] = "-1000.00";
 
             // Process Timestamp
             auto timestamp = row[1];
