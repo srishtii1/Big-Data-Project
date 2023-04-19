@@ -114,6 +114,7 @@ int main(int argc, char **argv)
 
         for (auto algo : algos)
         {
+            std::cout << "Algorithm: " << algo << std::endl;
             query_processor.process_query(algo + "_" + matriculation_number, query.year1, query.year2, query.city, algo);
         }
 
