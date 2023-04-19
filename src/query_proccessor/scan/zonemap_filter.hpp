@@ -7,6 +7,11 @@
 #include "../../zonemap/Zone.hpp"
 #include <vector>
 
+/**
+ * This class defines a zonemap filter. 
+ * It takes in a zonemap and a data file and outputs the data that satisfies the predicates.
+ * Args: PositionInputFile, PositionOutputFile, DataFile, ZonemapFile, BlockSize
+*/
 template <typename T>
 class ZonemapFilter
 {
@@ -27,10 +32,12 @@ public:
 template <typename T>
 ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, std::string zonemap_file, int block_size)
 {
+    //Open required files
     this->position_input_file.open(position_input_file_name, std::ios::binary);
     this->position_output_file.open(position_output_file_name, std::ios::binary);
     this->data_file.open(data_file_name, std::ios::binary);
     this->zonemap_file.open(zonemap_file, std::ios::binary);
+
     this->block_size = block_size;
 
     // load zonemap
@@ -40,7 +47,7 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
         bool status = zone_block.read_next_block(this->zonemap_file);
         if (!status)
         {
-            // std::cout<<"Error reading zonemap file"<<std::endl;
+            std::cout<<"Error reading zonemap file"<<std::endl;
             break;
         }
         for (int i = 0; i < zone_block.get_data().size(); i++)
@@ -57,13 +64,11 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
 {
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
-    // std::vector<ColumnTypeConstants::position> positions(position_block_size / ColumnSizeConstants::position);
-
     Block<T> data_block = Block<T>(position_block_size);
-
     Block<ColumnTypeConstants::position> qualified_positions_block(position_block_size);
-    // std::vector<ColumnTypeConstants::position> qualified_positions;
+    
     std::vector<int> qualified_block_indices;
+    
     int num_qualified_tuples = 0;
 
     int num_data_ios = 0;
@@ -78,7 +83,6 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
             auto pred_pair = preds[i];
             if ((pred_pair.first.evaluate_expr(ZoneMin) && pred_pair.second.evaluate_expr(ZoneMax)))
             {
-                // std::cout << "ZoneMap: " << block_index << " = "<< ZoneMin << ", " << ZoneMax << '\n';
                 qualified_block_indices.push_back(block_index);
                 break;
             }

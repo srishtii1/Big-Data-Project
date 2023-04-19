@@ -1,3 +1,7 @@
+/**
+* This class defines a zone of type T. Zones form the fundamental building blocks of the zonemap.
+* Args: BlockId, Min, Max
+**/
 template <typename T>
 class Zone{
     private:
@@ -7,7 +11,6 @@ class Zone{
     public:
         Zone();
         Zone(int block_id, T min, T max);
-        //~Zone();
         int getBlockId();
         T getMin();
         T getMax();
