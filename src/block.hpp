@@ -17,14 +17,20 @@ class Block
  */
 {
 private:
+    /**
+     * @property block_size: block size in bytes
+     * @property start_position: starting position of target block to be read from/written to
+     * @property end_position: ending position of target block to be read from/written to
+     */
     int block_size; // in bytes
     int start_position;
     int end_position;
 
 public:
     /**
-     * all method definitions which rely on the template T need to be defined in the header file itself
-     * https://stackoverflow.com/a/14914168/17022186
+     * @property block_data: data of the block of a generic type T in the form of a vector
+     * @property curr_start_of_block: Current starting position of the block
+     * @property num_elements: number of elements in the block (based on a given data type)
      */
     std::vector<T> block_data;
     int curr_start_of_block;
@@ -45,6 +51,11 @@ public:
     std::pair<int, int> get_range();
 };
 
+/**
+ * @brief Construct a new Block< T>:: Block object
+ * Default constructor
+ * @tparam T
+ */
 template <typename T>
 inline Block<T>::Block()
 {
@@ -54,17 +65,29 @@ inline Block<T>::Block()
     this->end_position = -1;
 }
 
+/**
+ * @brief Construct a new Block< T>:: Block object
+ * Parametrized constructor to construct a block based on a block size
+ * @tparam T
+ * @param block_size: Desired block size in bytes
+ */
 template <typename T>
 inline Block<T>::Block(int block_size)
 {
     this->block_size = block_size;
     this->curr_start_of_block = -1;
-    this->num_elements = (unsigned long long) this->block_size / sizeof(T);
+    this->num_elements = (unsigned long long)this->block_size / sizeof(T);
     this->block_data.resize(this->num_elements);
     this->start_position = -1;
     this->end_position = -1;
 }
 
+/**
+ * @brief Construct a new Block<bool>:: Block object
+ * Specialized constructor for the case of bool
+ * @tparam
+ * @param block_size: Desired block size in bytes
+ */
 template <>
 inline Block<bool>::Block(int block_size)
 {
@@ -75,18 +98,36 @@ inline Block<bool>::Block(int block_size)
     this->end_position = -1;
 }
 
+/**
+ * @brief Print a specific value in the Block
+ *
+ * @tparam T
+ * @param ele: element to be printed
+ */
 template <typename T>
 inline void Block<T>::print_value(T ele)
 {
     std::cout << ele << std::endl;
 }
 
+/**
+ * @brief Get data from the block of a generic type
+ *
+ * @tparam T
+ * @return std::vector<T>
+ */
 template <typename T>
 inline std::vector<T> Block<T>::get_data()
 {
     return this->block_data;
 }
 
+/**
+ * @brief Print bool value
+ * Specialized method to print a boolean value
+ * @tparam
+ * @param ele: bool value to be printed
+ */
 template <>
 inline void Block<bool>::print_value(bool ele)
 {
@@ -96,15 +137,30 @@ inline void Block<bool>::print_value(bool ele)
         std::cout << "Paya Lebar" << std::endl;
 }
 
+/**
+ * @brief Print 8-bit integer value
+ * Specialized method to print a 8-bit integer value
+ * @tparam
+ * @param ele: 8-bit integer value to be printed
+ */
 template <>
 inline void Block<__int8>::print_value(__int8 ele)
 {
     std::cout << (int)ele << std::endl;
 }
 
+/**
+ * @brief Read data into block_data vector from file
+ *
+ * @tparam T
+ * @param fin: input file stream to be read from
+ * @param target_pos: Target position in the overall database to be read
+ * @param verbose: verbosity level
+ * @return bool
+ */
 template <typename T>
 inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose)
-{   
+{
     int start_block_num = target_pos / this->num_elements;
     int start_of_block = start_block_num * (this->num_elements * sizeof(T));
     int block_offset = target_pos % this->num_elements;
@@ -121,7 +177,7 @@ inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
 
     unsigned long long size;
     fin.seekg(0, std::ios::end);
-    size=fin.tellg();
+    size = fin.tellg();
 
     fin.seekg(start_of_block);
 
@@ -144,7 +200,7 @@ inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
     int num_elements = std::min(data_size / sizeof(T), (this->num_elements));
 
     this->block_data.resize(num_elements);
-    
+
     fin.read(reinterpret_cast<char *>(this->block_data.data()), num_elements * sizeof(T));
 
     // if (verbose)
@@ -155,6 +211,15 @@ inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
     return true;
 }
 
+/**
+ * @brief Read boolean data into block_data vector from file
+ *
+ * @tparam
+ * @param fin: input file stream to be read from
+ * @param target_pos: Target position in the overall database to be read
+ * @param verbose: verbosity level
+ * @return bool
+ */
 template <>
 inline bool Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verbose)
 {
@@ -202,18 +267,38 @@ inline bool Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
     return true;
 }
 
+/**
+ * @brief Write data from block_data into a file
+ *
+ * @tparam T
+ * @param fout: output file stream to be written to
+ * @param num_elements: number of elements to be written
+ */
 template <typename T>
 inline void Block<T>::write_data(std::ofstream &fout, int num_elements)
 {
     fout.write((char *)&block_data[0], num_elements * sizeof(T));
 }
 
+/**
+ * @brief Write entire block_data into a file
+ *
+ * @tparam T
+ * @param fout: output file stream to be written to
+ */
 template <typename T>
 inline void Block<T>::write_data(std::ofstream &fout)
 {
     fout.write((char *)&block_data[0], this->block_data.size() * sizeof(T));
 }
 
+/**
+ * @brief Store an element in a particular index in block_data
+ *
+ * @tparam T
+ * @param ele: element to be stored
+ * @param index: index in block_data to be stored at
+ */
 template <typename T>
 inline void Block<T>::push_data(T ele, int index)
 {
@@ -222,6 +307,11 @@ inline void Block<T>::push_data(T ele, int index)
     // std::cout << index << " " << ele << '\n';
 }
 
+/**
+ * @brief Print entire data from block
+ *
+ * @tparam T
+ */
 template <typename T>
 inline void Block<T>::print_data()
 {
@@ -230,6 +320,13 @@ inline void Block<T>::print_data()
     std::cout << std::endl;
 }
 
+/**
+ * @brief Read next block from the file
+ *
+ * @tparam T
+ * @param fin: input file stream to be read from
+ * @return bool
+ */
 template <typename T>
 inline bool Block<T>::read_next_block(std::ifstream &fin)
 {
@@ -243,6 +340,13 @@ inline bool Block<T>::read_next_block(std::ifstream &fin)
     return false;
 }
 
+/**
+ * @brief Check if block is full
+ *
+ * @tparam T
+ * @param num_filled: number of elements which are filled in the block
+ * @return bool
+ */
 template <typename T>
 inline bool Block<T>::is_full(int num_filled)
 {
@@ -250,6 +354,11 @@ inline bool Block<T>::is_full(int num_filled)
     return (num_filled == this->num_elements);
 }
 
+/**
+ * @brief Print entire boolean data from block
+ * Specialized print data method
+ * @tparam
+ */
 template <>
 inline void Block<__int8>::print_data()
 {
@@ -258,12 +367,23 @@ inline void Block<__int8>::print_data()
     std::cout << std::endl;
 }
 
+/**
+ * @brief Get starting and ending positions of the block
+ *
+ * @tparam T
+ * @return std::pair<int, int>
+ */
 template <typename T>
 inline std::pair<int, int> Block<T>::get_range()
 {
     return std::make_pair(this->start_position, this->end_position);
 }
 
+/**
+ * @brief Clear the block data and resize back to the size of the block
+ *
+ * @tparam T
+ */
 template <typename T>
 inline void Block<T>::clear()
 {
