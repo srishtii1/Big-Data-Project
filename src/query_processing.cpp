@@ -148,7 +148,8 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
         ZonemapFilter<ColumnTypeConstants::year> year_filter_zonemap = ZonemapFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", "data/zone_maps/year_zones.dat", this->block_size);
         year_filter_zonemap.process_filter({year1Cutoff, year2Cutoff}, true);
     }
-    else{
+    else
+    {
         AtomicPredicate<ColumnTypeConstants::year> *p1 = new AtomicPredicate<ColumnTypeConstants::year>("=", year1);
         AtomicPredicate<ColumnTypeConstants::year> *p2 = new AtomicPredicate<ColumnTypeConstants::year>("=", year2);
         OrPredicate<ColumnTypeConstants::year> orPred = OrPredicate<ColumnTypeConstants::year>({p1, p2});
@@ -161,7 +162,6 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
     city_filter.process_filter(p3);
 
-
     // Save Group By Key for the required positions along with posiiton
     GroupBy groupby_year_month = GroupBy(this->block_size);
     groupby_year_month.save_groupby_key("data/column_store/temp/temp2.dat", "data/column_store/temp/temp3.dat", "data/column_store/raw_timestamp_encoded.dat");
@@ -170,7 +170,6 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     std::map<std::string, ColumnTypeConstants::temperature> min_temp;
     std::map<std::string, ColumnTypeConstants::temperature> max_temp;
     groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_temp.dat", "data/column_store/temp/min_temp.dat", "data/column_store/temperature_encoded.dat", min_temp, max_temp);
-
 
     // std::cout << "\nMin Temp\n";
     // for (auto it = min_temp.begin(); it != min_temp.end(); ++it)

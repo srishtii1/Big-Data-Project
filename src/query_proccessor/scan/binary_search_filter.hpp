@@ -9,7 +9,6 @@ template <typename T>
 class BinarySearchFilter
 {
 private:
-
     std::ifstream position_input_file;
     std::ofstream position_output_file;
     std::ifstream data_file;
@@ -18,7 +17,7 @@ private:
 public:
     BinarySearchFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, int block_size);
     ~BinarySearchFilter();
-    void process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose=false);
+    void process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose = false);
 };
 
 template <typename T>
@@ -30,12 +29,11 @@ BinarySearchFilter<T>::BinarySearchFilter(std::string position_input_file_name, 
     this->block_size = block_size;
 }
 
-
 // Find correct block position for each atomic predicate
 // Binary search will only work for >, <, <=, >= since these can be represented as increasing and decreasing functions
 // For = we need to compare with current value
 template <typename T>
-void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose) 
+void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose)
 {
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
@@ -67,7 +65,8 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
 
             bool read = data_block.read_data(this->data_file, mid, false);
 
-            if (read) ++num_data_ios;
+            if (read)
+                ++num_data_ios;
 
             std::vector<T> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
@@ -78,8 +77,9 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                 end = range.first - 1;
             }
 
-            else if (pred->get_value() > data[0] && pred->get_value() <=data[data.size()-1]) { // The first tuple exists in this block
-                for (int i=0; i<data.size(); ++i)
+            else if (pred->get_value() > data[0] && pred->get_value() <= data[data.size() - 1])
+            { // The first tuple exists in this block
+                for (int i = 0; i < data.size(); ++i)
                 {
                     if (pred->evaluate_expr(data[i]))
                     {
@@ -90,7 +90,7 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                 }
             }
 
-            else if (pred->get_value() > data[data.size()-1])
+            else if (pred->get_value() > data[data.size() - 1])
             {
                 start = range.second + 1;
             }
@@ -100,17 +100,19 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                 end = range.first - 1;
             }
 
-            if (done) break;
+            if (done)
+                break;
         }
 
-
-        if (required_pos == -1) continue;
+        if (required_pos == -1)
+            continue;
 
         while (true)
         {
             bool read = data_block.read_data(this->data_file, required_pos, false);
 
-            if (read) ++num_data_ios;
+            if (read)
+                ++num_data_ios;
 
             std::vector<T> data = data_block.get_data();
             std::pair<int, int> range = data_block.get_range();
@@ -132,7 +134,8 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
                 }
             }
 
-            else {
+            else
+            {
                 if (num_qualified_tuples > 0)
                 {
                     qualified_positions_block.write_data(this->position_output_file, num_qualified_tuples);
@@ -149,7 +152,8 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
     this->position_output_file.close();
     this->data_file.close();
 
-    if (verbose) std::cout << "Number of Data IOs: " << num_data_ios << '\n';
+    if (verbose)
+        std::cout << "Number of Data IOs: " << num_data_ios << '\n';
 }
 
 template <typename T>

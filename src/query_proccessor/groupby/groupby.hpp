@@ -63,7 +63,8 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
             // std::cout << positions_block.block_data[i] << '\n';
             data_block.read_data(this->data_file, positions_block.block_data[i], false);
             std::vector<ColumnTypeConstants::raw_timestamp> data = data_block.get_data();
-            if (data.size() == 0) break;
+            if (data.size() == 0)
+                break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i] - range.first;
@@ -119,18 +120,19 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
 
         for (int i = 0; i < positions_block.get_data().size(); ++i)
         {
-            //std::cout << "Position[i]: " << positions_block.block_data[i].position << " " << positions_block.block_data[i].key << std::endl;
+            // std::cout << "Position[i]: " << positions_block.block_data[i].position << " " << positions_block.block_data[i].key << std::endl;
             data_block.read_data(this->data_file, positions_block.block_data[i].position, false);
             std::vector<float> data = data_block.get_data();
-            if (data.size() == 0) break;
+            if (data.size() == 0)
+                break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i].position - range.first;
 
             float value = data[index];
 
-            if (value == -1)
-                continue; // we encode -1 for missing values
+            if (value == -1000)
+                continue; // we encode -1000 for missing values
 
             std::string key(positions_block.block_data[i].key);
 
@@ -200,15 +202,16 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
         {
             data_block.read_data(this->data_file, positions_block.block_data[i].position, false);
             std::vector<float> data = data_block.get_data();
-            if (data.size() == 0) break;
+            if (data.size() == 0)
+                break;
             std::pair<int, int> range = data_block.get_range();
 
             int index = positions_block.block_data[i].position - range.first;
 
             float value = data[index];
 
-            if (value == -1)
-                continue; // we encode -1 for missing values
+            if (value == -1000)
+                continue; // we encode -1000 for missing values
 
             std::string key(positions_block.block_data[i].key);
 
