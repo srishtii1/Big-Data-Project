@@ -11,6 +11,11 @@
 #include "src/query_processing.hpp"
 // #include "src/block.hpp"
 
+/**
+ * @brief Function to parse query and retrieve years and station for filtering
+ * @param matric_no: input matriculation number in query
+ * @return Query
+ */
 Query parse_query(std::string matric_no)
 {
     int year = (int)(matric_no.at(matric_no.size() - 2)) - 48;
@@ -20,6 +25,11 @@ Query parse_query(std::string matric_no)
     return Query(year, city);
 }
 
+/**
+ * @brief Debug method to test block-based reading and writing
+ * @param block_size: desired block size
+ * @param target_pos: target position to be read from/written to
+ */
 void test_reading(int block_size, int target_pos)
 {
     Block<ColumnTypeConstants::year> year_block(block_size);
@@ -93,6 +103,12 @@ void test_reading(int block_size, int target_pos)
     }
 }
 
+/**
+ * @brief entry point function of system
+ * @param argc: number of command line arguments - should be 3
+ * @param argv: command line arguments - when running, provide in order "{MATRIC_NUM} {BLOCK_SIZE}"
+ * @return int
+ */
 int main(int argc, char **argv)
 {
     try
@@ -106,7 +122,8 @@ int main(int argc, char **argv)
         std::cout << "Query: " << query.year1 << " " << query.year2 << " " << query.city << std::endl;
         preprocess_csv();
         createZonemap(block_size);
-        std::cout<<"Finished preprocessing"<<std::endl;
+        std::cout << "Finished preprocessing" << std::endl
+                  << std::endl;
 
         QueryProcessor query_processor(block_size);
 
@@ -117,7 +134,6 @@ int main(int argc, char **argv)
             std::cout << "Algorithm: " << algo << std::endl;
             query_processor.process_query(algo + "_" + matriculation_number, query.year1, query.year2, query.city, algo);
         }
-
     }
 
     catch (const std::exception &exc)

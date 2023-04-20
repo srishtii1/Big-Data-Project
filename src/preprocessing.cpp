@@ -3,6 +3,13 @@
 #include "zonemap/Zone.hpp"
 #include "vector"
 
+/**
+ * @brief Preprocessing function to write binary values in chunks to a file
+ * This function chunks up groups of 8 bits into a single byte to output to a file, to store in a compressed manner
+ * @param fout: file output stream to be written to
+ * @param x: vector of boolean values to be written
+ */
+
 // Group into 8s if x.size() % 8 != 0
 void binary_write(std::ofstream &fout, std::vector<bool> &x)
 {
@@ -18,6 +25,13 @@ void binary_write(std::ofstream &fout, std::vector<bool> &x)
     fout.write((const char *)&code, sizeof(uint8_t));
 }
 
+/**
+ * @brief Debug function to read the binary values written as described above
+ *
+ * @param fin: file input stream to read from
+ * @param num_bytes: number of bytes to be read from input file
+ * @return std::vector<bool>
+ */
 std::vector<bool> binary_read(std::ifstream &fin, int num_bytes)
 {
 
@@ -42,6 +56,11 @@ std::vector<bool> binary_read(std::ifstream &fin, int num_bytes)
     return values;
 }
 
+/**
+ * @brief Function to check existence of column store
+ *
+ * @return bool
+ */
 bool check_if_col_store_exists()
 {
     // will fail if two programs access file simultanouesly; ideally shouldn't occur in this case
@@ -54,14 +73,16 @@ bool check_if_col_store_exists()
     return exists;
 }
 
+/**
+ * @brief Function to preprocess the input database CSV and output to column store format
+ */
 void preprocess_csv()
 {
     bool exists = check_if_col_store_exists();
 
     std::ifstream input_file;
 
-    // if (!exists)
-    if (true)
+    if (!exists)
     {
 
         std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
@@ -190,36 +211,16 @@ void preprocess_csv()
         std::cout << "Using existing column store!" << std::endl;
     }
 
-    // std::cout << "Sanity check for Locations:" << std::endl;
-
-    // input_file.open("data/column_store/city_encoded.dat", std::ios::binary);
-    // std::vector<bool> x = binary_read(input_file, 1012);
-    // std::cout << x.size() << '\n';
-
-    // for (int i = 0; i < x.size(); ++i)
-    // {
-    //     std::cout << x[i];
-    // }
-    // std::cout << '\n';
-    // input_file.close();
-    // return;
-
-    // float f[100];
-    // input_file.open("data/column_store/humidity_encoded.dat", std::ios::in | std::ios::binary);
-
-    // input_file.read((char*)&f, sizeof(float) * 100);
-
-    // for (int i=0; i<100; ++i)
-    // {
-    //     std::cout << f[i] << " ";
-    // }
     std::cout << "\n";
     input_file.close();
 }
 
-/*
-This function creates a zone map for the year column and saves the zone map to disk
-*/
+/**
+ * @brief Function to create zone map for year column
+ * This function creates a zone map for the year column and saves the zone map to disk
+ * @param block_size: Desired block size
+ */
+
 void createZonemap(int block_size)
 {
     std::ifstream yearDataStream("data/column_store/" + FileNameConstants::year, std::ios::binary);
@@ -259,9 +260,11 @@ void createZonemap(int block_size)
     zoneOutStream.close();
 }
 
-/*
-This function reads the zone map from disk and prints it to the console
-*/
+/**
+ * @brief Debug function to read zone map
+ * This function reads the zone map from disk and prints it to the console
+ * @param block_size
+ */
 void readZonemap(int block_size)
 {
     std::ifstream zoneInStream("data/zone_maps/year_zones.dat", std::ios::in | std::ios::binary);

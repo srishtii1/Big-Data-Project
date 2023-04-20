@@ -1,3 +1,13 @@
+/**
+ * @file block.hpp
+ * @author Siddharth, Atul
+ * @brief Header file for Block abstraction
+ * @version 0.1
+ * @date 2023-04-20
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #ifndef BLOCK_H
 #define BLOCK_H
 
@@ -9,12 +19,14 @@
 #include "query_proccessor/groupby/groupbyyearmonthposition.hpp"
 #include "constants.hpp"
 
-template <typename T>
-class Block
 /**
+ * @brief Block class
  * Block class which is agnostic to the type of data it will store; it is simply storing a fixed amount of data.
  * The interface will accept a target position (row number in the table) where it must read data, then read from/write to the target block where the data is present.
+ * @tparam T
  */
+template <typename T>
+class Block
 {
 private:
     /**

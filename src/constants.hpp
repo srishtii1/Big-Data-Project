@@ -6,6 +6,11 @@
 #include <map>
 #include <any>
 
+/**
+ * @brief Contants file
+ * This file defines different namespaces under which relevant program constants are defined.
+ */
+
 namespace FileNameConstants
 {
     const std::string year = "year_encoded.dat";

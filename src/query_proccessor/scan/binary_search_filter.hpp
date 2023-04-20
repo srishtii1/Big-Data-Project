@@ -1,3 +1,13 @@
+/**
+ * @file binary_search_filter.hpp
+ * @author Atul, Siddharth
+ * @brief Header file for binary search based filter
+ * @version 0.1
+ * @date 2023-04-20
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #if !defined(BINARY_SEARCH_FILTER_H)
 #define BINARY_SEARCH_FILTER_H
 
@@ -5,10 +15,20 @@
 #include "predicate.hpp"
 #include "../../block.hpp"
 
+/**
+ * @brief Binary Search Filter class
+ * @tparam T
+ */
 template <typename T>
 class BinarySearchFilter
 {
 private:
+    /**
+     * @property position_input_file: input file stream of positions from previous step in query pipeline
+     * @property position_output_file: output file stream where new qualified positions must be written
+     * @property data_file: input file stream of original data column
+     * @property block_size: desired block size
+     */
     std::ifstream position_input_file;
     std::ofstream position_output_file;
     std::ifstream data_file;
@@ -20,6 +40,14 @@ public:
     void process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose = false);
 };
 
+/**
+ * @brief Construct a new Binary Search Filter< T>:: Binary Search Filter object
+ * @tparam T
+ * @param position_input_file_name: string file name of input qualified positions file
+ * @param position_output_file_name: string file name of output qualified positions file
+ * @param data_file_name: string file name of original column store data
+ * @param block_size: desired block size
+ */
 template <typename T>
 BinarySearchFilter<T>::BinarySearchFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, int block_size)
 {
@@ -29,20 +57,25 @@ BinarySearchFilter<T>::BinarySearchFilter(std::string position_input_file_name, 
     this->block_size = block_size;
 }
 
-// Find correct block position for each atomic predicate
-// Binary search will only work for >, <, <=, >= since these can be represented as increasing and decreasing functions
-// For = we need to compare with current value
+/**
+ * @brief Method to process the filter using binary search
+ * Note: Binary search will only work for >, <, <=, >= since these can be represented as increasing and decreasing functions
+ * For = we need to compare with current value
+ * @tparam T
+ * @param preds: predicates to filter on; must be one of <, >, <=, >= as described above
+ * @param start: starting position for bianry search
+ * @param end: ending position for binary search
+ * @param verbose: verbosity level
+ */
 template <typename T>
 void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds, int start, int end, bool verbose)
 {
     int position_block_size = this->block_size;
     Block<ColumnTypeConstants::position> positions_block(position_block_size);
-    std::vector<ColumnTypeConstants::position> positions(position_block_size / ColumnSizeConstants::position);
 
     Block<T> data_block = Block<T>(position_block_size);
 
     Block<ColumnTypeConstants::position> qualified_positions_block(position_block_size);
-    std::vector<ColumnTypeConstants::position> qualified_positions;
     int num_qualified_tuples = 0;
 
     int start_copy = start;
@@ -156,6 +189,11 @@ void BinarySearchFilter<T>::process_filter(std::vector<AtomicPredicate<T>> preds
         std::cout << "Number of Data IOs: " << num_data_ios << '\n';
 }
 
+/**
+ * @brief Destroy the Binary Search Filter< T>:: Binary Search Filter object
+ * Closes relevant files to avoid corruption
+ * @tparam T
+ */
 template <typename T>
 BinarySearchFilter<T>::~BinarySearchFilter()
 {
