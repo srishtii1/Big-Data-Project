@@ -64,8 +64,6 @@ void preprocess_csv()
     if (true)
     {
 
-        std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
-
         input_file.open("data/SingaporeWeather.csv", std::ios::in);
 
         std::unordered_map<std::string, std::ofstream *> file_map;
@@ -183,7 +181,6 @@ void preprocess_csv()
         }
 
         input_file.close();
-        std::cout << file_map["year"] << '\n';
     }
     else
     {
@@ -217,8 +214,10 @@ void preprocess_csv()
     input_file.close();
 }
 
-/*
-This function creates a zone map for the year column and saves the zone map to disk
+/**
+ * @brief function creates a zone map for the year column and saves the zone map to disk
+ * 
+ * @param block_size is the size of one disk block in bytes
 */
 void createZonemap(int block_size)
 {
@@ -259,8 +258,10 @@ void createZonemap(int block_size)
     zoneOutStream.close();
 }
 
-/*
-This function reads the zone map from disk and prints it to the console
+/**
+ * @brief function reads the zone map from disk and prints it to the console
+ * 
+ * @param block_size is the size of one disk block in bytes
 */
 void readZonemap(int block_size)
 {
