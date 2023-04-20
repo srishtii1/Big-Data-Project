@@ -85,8 +85,6 @@ void preprocess_csv()
     if (!exists)
     {
 
-        std::cout << sizeof(unsigned char) << " " << sizeof(__int8) << " " << sizeof(uint8_t) << '\n';
-
         input_file.open("data/SingaporeWeather.csv", std::ios::in);
 
         std::unordered_map<std::string, std::ofstream *> file_map;
@@ -204,7 +202,6 @@ void preprocess_csv()
         }
 
         input_file.close();
-        std::cout << file_map["year"] << '\n';
     }
     else
     {

@@ -9,8 +9,7 @@
 
 /**
  * This class defines a zonemap filter. 
- * It takes in a zonemap and a data file and outputs the data that satisfies the predicates.
- * Args: PositionInputFile, PositionOutputFile, DataFile, ZonemapFile, BlockSize
+ * It takes in a zonemap and a set of predicates and outputs the blocks that satisfy the predicates.
 */
 template <typename T>
 class ZonemapFilter
@@ -29,6 +28,16 @@ public:
     void process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds, bool verbose = false); // Use the templates here
 };
 
+/**
+ * @brief Constructor for the ZonemapFilter class.
+ * 
+ * @tparam T: The type of the data in the column.
+ * @param position_input_file_name: The name of the file containing the positions of the blocks that need to be scanned.
+ * @param position_output_file_name: The name of the file to which the positions of the blocks that satisfy the predicates are written.
+ * @param data_file_name: The name of the file containing the data of the selected column.
+ * @param zonemap_file: The name of the file containing the zonemap of the selected column.
+ * @param block_size: The size of the blocks in the data file.
+*/
 template <typename T>
 ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::string position_output_file_name, std::string data_file_name, std::string zonemap_file, int block_size)
 {
@@ -47,7 +56,6 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
         bool status = zone_block.read_next_block(this->zonemap_file);
         if (!status)
         {
-            std::cout<<"Error reading zonemap file"<<std::endl;
             break;
         }
         for (int i = 0; i < zone_block.get_data().size(); i++)
@@ -59,6 +67,13 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
     std::cout << "Number of zones: " << this->zones.size() << '\n';
 }
 
+/**
+ * @brief Filters data using the zonemap and writes the positions which satisfy the predicates to a file.
+ * 
+ * @tparam T: The type of the data in the column.
+ * @param preds: The predicates to be applied.
+ * @param verbose: Whether to print the number of IOs or not.
+*/
 template <typename T>
 void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, AtomicPredicate<T>>> preds, bool verbose)
 {
@@ -145,6 +160,11 @@ void ZonemapFilter<T>::process_filter(std::vector<std::pair<AtomicPredicate<T>, 
         std::cout << "Number of Data IOs: " << num_data_ios << '\n';
 }
 
+/**
+ * @brief Destructor for the ZonemapFilter class.
+ * 
+ * @tparam T: The type of the data in the column.
+*/
 template <typename T>
 ZonemapFilter<T>::~ZonemapFilter()
 {
