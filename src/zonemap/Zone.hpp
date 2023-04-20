@@ -1,7 +1,15 @@
 /**
-* This class defines a zone of type T. Zones form the fundamental building blocks of the zonemap.
-* Args: BlockId, Min, Max
-**/
+ * @file Zone.hpp
+ * @author Srishti
+ * @brief Header file for zone class. This class defines a zone of type T. Zones form the fundamental building blocks of the zonemap.
+ * @version 0.1
+ * @date 2023-04-20
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
+
 template <typename T>
 class Zone{
     private:

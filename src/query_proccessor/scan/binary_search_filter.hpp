@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2023
  *
  */
+
 #if !defined(BINARY_SEARCH_FILTER_H)
 #define BINARY_SEARCH_FILTER_H
 

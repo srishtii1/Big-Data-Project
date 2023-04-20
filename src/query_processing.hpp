@@ -55,11 +55,13 @@ private:
 
 public:
     QueryProcessor(int block_size);
-    void process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city, std::string yearFilterType);
+    void process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city);
     void output_to_year_pos_file(Block<ColumnTypeConstants::position> &year_position_block, int &write_pos, int &pos_index);
     void get_year_pos(int year1, int year2);
     void print_year_pos();
     std::vector<int> get_month_pos(int month, std::string year_pos_file);
+    void experiment(std::string matric_num, uint16_t year1, uint16_t year2, bool city, std::string yearFilterType);
+
 };
 
 #endif

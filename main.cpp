@@ -6,7 +6,7 @@
 #include <cstring>
 #include <cassert>
 
-#include "src/preprocessing.hpp"
+#include "src/preprocessing/preprocessing.hpp"
 #include "src/query.hpp"
 #include "src/query_processing.hpp"
 // #include "src/block.hpp"
@@ -19,7 +19,7 @@
 Query parse_query(std::string matric_no)
 {
     int year = (int)(matric_no.at(matric_no.size() - 2)) - 48;
-    year = (year < 2) ? (year + 10) : year;
+    year = (year <= 1) ? (10 + year) : year; // Convert 0 to 10 and 1 to 11 since years are from 2002 to 2021
     bool city = ((int)matric_no.at(matric_no.size() - 3) - 48) % 2;
 
     return Query(year, city);
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 {
     try
     {
-        assert(argc == 3);
+        assert(argc >= 3);
 
         std::string matriculation_number = argv[1];
         int block_size = atoi(argv[2]);
@@ -122,18 +122,26 @@ int main(int argc, char **argv)
         std::cout << "Query: " << query.year1 << " " << query.year2 << " " << query.city << std::endl;
         preprocess_csv();
         createZonemap(block_size);
-        std::cout << "Finished preprocessing" << std::endl
+        std::cout << "Finished Preprocessing" << std::endl
                   << std::endl;
 
         QueryProcessor query_processor(block_size);
 
-        std::vector<std::string> algos = {"Filter", "BinarySearch", "ZoneMap"};
-
-        for (auto algo : algos)
+        // Filter experiments on year
+        if (argc == 4)
         {
-            std::cout << "Algorithm: " << algo << std::endl;
-            query_processor.process_query(algo + "_" + matriculation_number, query.year1, query.year2, query.city, algo);
+            std::vector<std::string> algos = {"Filter", "BinarySearch", "ZoneMap"};
+
+            for (auto algo : algos)
+            {
+                std::cout << "Algorithm: " << algo << std::endl;
+                query_processor.experiment(algo + "_" + matriculation_number, query.year1, query.year2, query.city, algo);
+            }
+            std::cout << '\n';
         }
+
+        // Main Query Processing
+        query_processor.process_query(matriculation_number, query.year1, query.year2, query.city);
     }
 
     catch (const std::exception &exc)

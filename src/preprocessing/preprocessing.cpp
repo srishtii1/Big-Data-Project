@@ -1,6 +1,6 @@
 #include "preprocessing.hpp"
-#include "block.hpp"
-#include "zonemap/Zone.hpp"
+#include "../block.hpp"
+#include "../zonemap/Zone.hpp"
 #include "vector"
 
 /**
@@ -78,6 +78,7 @@ bool check_if_col_store_exists()
  */
 void preprocess_csv()
 {
+
     bool exists = check_if_col_store_exists();
 
     std::ifstream input_file;
@@ -222,7 +223,6 @@ void createZonemap(int block_size)
 {
     std::ifstream yearDataStream("data/column_store/" + FileNameConstants::year, std::ios::binary);
     int num_records_per_block = block_size / ColumnSizeConstants::year;
-    std::cout << "Num Records per block: " << num_records_per_block << '\n';
     Block<ColumnTypeConstants::year> year_read_block = Block<ColumnTypeConstants::year>(block_size);
     std::ofstream zoneOutStream("data/zone_maps/year_zones.dat", std::ios::out | std::ios::binary);
     Block<Zone<ColumnTypeConstants::year>> write_block = Block<Zone<ColumnTypeConstants::year>>(block_size);

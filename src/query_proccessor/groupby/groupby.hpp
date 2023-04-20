@@ -110,10 +110,9 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
                 num_qualified_tuples = 0;
                 qualified_positions_with_key_block.clear();
             }
+            
         }
     }
-
-    std::cout << "Got qualified tuples" << std::endl;
 
     if (num_qualified_tuples > 0)
     {
@@ -124,6 +123,7 @@ void GroupBy::save_groupby_key(std::string position_input_file_name, std::string
     this->position_input_file.close();
     this->position_key_output_file.close();
     this->data_file.close();
+
 }
 
 /**
@@ -196,15 +196,12 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
     for (auto it = max_aggr.begin(); it != max_aggr.end(); ++it)
     {
         aggr_max[it->first] = it->second.compute_value();
-        // std::cout << it->first << " : " << it->second.compute_value() << "\n";
         max_compare[it->first] = new AtomicPredicate("=", it->second.compute_value());
     }
 
-    std::cout << '\n';
     for (auto it = min_aggr.begin(); it != min_aggr.end(); ++it)
     {
         aggr_min[it->first] = it->second.compute_value();
-        // std::cout << it->first << " : " << it->second.compute_value() << "\n";
         min_compare[it->first] = new AtomicPredicate("=", it->second.compute_value());
     }
 
@@ -241,7 +238,7 @@ void GroupBy::save_aggregation(std::string position_input_file_name, std::string
 
             float value = data[index];
 
-            if (value == -1000)
+            if (value <= -1000)
                 continue; // we encode -1000 for missing values
 
             std::string key(positions_block.block_data[i].key);

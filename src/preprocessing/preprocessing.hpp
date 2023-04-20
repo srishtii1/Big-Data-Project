@@ -13,7 +13,7 @@
 
 /**
  * @file preprocessing.hpp
- * @author Atul
+ * @author Atul, Srishti
  * @brief Header file for preprocessor
  * @version 0.1
  * @date 2023-04-20
@@ -22,7 +22,7 @@
  *
  */
 
-#include "constants.hpp"
+#include "../constants.hpp"
 
 void preprocess_csv();
 void createZonemap(int block_size);

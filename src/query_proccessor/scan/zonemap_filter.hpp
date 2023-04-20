@@ -1,3 +1,14 @@
+/**
+ * @file zonemap_filter.hpp
+ * @author Srishti
+ * @brief Header file for zonemap filter. It takes in a zonemap and a set of predicates and outputs the blocks that satisfy the predicates.
+ * @version 0.1
+ * @date 2023-04-20
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #if !defined(ZONEMAPFILTER_H)
 #define ZONEMAPFILTER_H
 
@@ -7,10 +18,7 @@
 #include "../../zonemap/Zone.hpp"
 #include <vector>
 
-/**
- * This class defines a zonemap filter. 
- * It takes in a zonemap and a set of predicates and outputs the blocks that satisfy the predicates.
-*/
+
 template <typename T>
 class ZonemapFilter
 {
@@ -63,8 +71,6 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
             this->zones.push_back(zone_block.block_data[i]);
         }
     }
-
-    std::cout << "Number of zones: " << this->zones.size() << '\n';
 }
 
 /**

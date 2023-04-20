@@ -1,3 +1,14 @@
+/**
+ * @file projection.hpp
+ * @author Atul
+ * @brief Header file for projection class.
+ * @version 0.1
+ * @date 2023-04-20
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
+
 #if !defined(PROJECTION_H)
 #define PROJECTION_H
 
@@ -9,6 +20,8 @@
 #include <vector>
 
 #include "../block.hpp"
+
+
 
 struct Date
 {
@@ -36,14 +49,16 @@ class Projection
 {
 private:
     /* data */
+    int block_size;
 public:
-    Projection();
+    Projection(int block_size);
 
     void save_result(std::string position_file_name, std::ofstream &output_file, std::string data_file_name, std::string station, std::string category, std::map<std::string, float> value);
 };
 
-Projection::Projection()
+Projection::Projection(int block_size)
 {
+    this->block_size = block_size;
 }
 
 void Projection::save_result(std::string position_file_name, std::ofstream &output_file, std::string data_file_name, std::string station, std::string category, std::map<std::string, float> value)
@@ -51,10 +66,9 @@ void Projection::save_result(std::string position_file_name, std::ofstream &outp
     std::ifstream position_file(position_file_name, std::ios::binary);
     std::ifstream data_file(data_file_name, std::ios::binary);
 
-    int position_block_size = 2048;
-    Block<ColumnTypeConstants::position> positions_block(position_block_size);
-    std::vector<uint32_t> positions(position_block_size / sizeof(uint32_t));
-    Block<time_t> data_block = Block<time_t>(2048);
+    Block<ColumnTypeConstants::position> positions_block(this->block_size);
+    std::vector<uint32_t> positions(this->block_size / sizeof(uint32_t));
+    Block<time_t> data_block = Block<time_t>(this->block_size);
 
     std::map<std::string, std::set<std::string>> dates;
 

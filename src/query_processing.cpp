@@ -33,14 +33,14 @@ QueryProcessor::QueryProcessor(int block_size)
 }
 
 /**
- * @brief Method to process query of required type
+ * @brief Method to process query of required type - part of filter experiment
  * @param matric_num: matriculation number in query
  * @param year1: first year to filter by
  * @param year2: second year to filter by
  * @param city: station to be filtered by
  * @param yearFilterType: filter type to be used: BinarySearch, ZoneMap, or Filter
  */
-void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city, std::string yearFilterType)
+void QueryProcessor::experiment(std::string matric_num, uint16_t year1, uint16_t year2, bool city, std::string yearFilterType)
 {
 
     // Filer Year
@@ -102,7 +102,7 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     std::string position_file_name = "";
     std::string proj_file = "data/column_store/raw_timestamp_encoded.dat";
 
-    Projection proj;
+    Projection proj = Projection(this->block_size);
 
     position_file_name = "data/column_store/temp/max_temp.dat";
     proj.save_result(position_file_name, output_file, proj_file, city == 0 ? "Changi" : "Paya Lebar", "Max Temperature", max_temp);
@@ -117,4 +117,77 @@ void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint1
     proj.save_result(position_file_name, output_file, proj_file, city == 0 ? "Changi" : "Paya Lebar", "Min Humidity", min_temp);
 
     output_file.close();
+}
+
+/**
+ * @brief Method to process query of required type
+ * @param matric_num: matriculation number in query
+ * @param year1: first year to filter by
+ * @param year2: second year to filter by
+ * @param city: station to be filtered by
+ */
+void QueryProcessor::process_query(std::string matric_num, uint16_t year1, uint16_t year2, bool city)
+{
+
+    std::cout << "Processing Query for " << matric_num << '\n';
+
+    // Filer Year with ZoneMap
+    AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>("<=", year1);
+    AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear1 = AtomicPredicate<ColumnTypeConstants::year>(">=", year1);
+    std::pair<AtomicPredicate<ColumnTypeConstants::year>, AtomicPredicate<ColumnTypeConstants::year>> year1Cutoff = std::make_pair(lowerCutOffYear1, upperCutOffYear1);
+
+    AtomicPredicate<ColumnTypeConstants::year> lowerCutOffYear2 = AtomicPredicate<ColumnTypeConstants::year>("<=", year2);
+    AtomicPredicate<ColumnTypeConstants::year> upperCutOffYear2 = AtomicPredicate<ColumnTypeConstants::year>(">=", year2);
+    std::pair<AtomicPredicate<ColumnTypeConstants::year>, AtomicPredicate<ColumnTypeConstants::year>> year2Cutoff = std::make_pair(lowerCutOffYear2, upperCutOffYear2);
+
+    ZonemapFilter<ColumnTypeConstants::year> year_filter_zonemap = ZonemapFilter<ColumnTypeConstants::year>("data/column_store/temp/positions.dat", "data/column_store/temp/temp1.dat", "data/column_store/year_encoded.dat", "data/zone_maps/year_zones.dat", this->block_size);
+    year_filter_zonemap.process_filter({year1Cutoff, year2Cutoff}, false);
+
+    // Filter City
+    AtomicPredicate<ColumnTypeConstants::city> p3 = AtomicPredicate<ColumnTypeConstants::city>("=", city);
+    Filter<ColumnTypeConstants::city> city_filter = Filter<ColumnTypeConstants::city>("data/column_store/temp/temp1.dat", "data/column_store/temp/temp2.dat", "data/column_store/city_encoded.dat", this->block_size);
+    city_filter.process_filter(p3, false);
+
+    // Save Group By Key for the required positions along with posiiton
+    GroupBy groupby_year_month = GroupBy(this->block_size);
+    groupby_year_month.save_groupby_key("data/column_store/temp/temp2.dat", "data/column_store/temp/temp3.dat", "data/column_store/raw_timestamp_encoded.dat");
+
+    // Perform aggregation and filter rows for temperature
+    std::map<std::string, ColumnTypeConstants::temperature> min_temp;
+    std::map<std::string, ColumnTypeConstants::temperature> max_temp;
+    groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_temp.dat", "data/column_store/temp/min_temp.dat", "data/column_store/temperature_encoded.dat", min_temp, max_temp);
+
+    // Perform aggregation and filter rows for humidity
+    std::map<std::string, ColumnTypeConstants::humidity> min_humid;
+    std::map<std::string, ColumnTypeConstants::humidity> max_humid;
+    groupby_year_month.save_aggregation("data/column_store/temp/temp3.dat", "data/column_store/temp/max_humid.dat", "data/column_store/temp/min_humid.dat", "data/column_store/humidity_encoded.dat", min_humid, max_humid);
+
+    std::cout << "Saving output to data/output/ScanResult_" + matric_num + ".csv\n"; 
+
+    std::string output_file_name = "data/output/ScanResult_" + matric_num + ".csv";
+
+    std::ofstream output_file;
+    output_file.open(output_file_name);
+    output_file << "Date,Station,Category,Value\n";
+
+    std::string position_file_name = "";
+    std::string proj_file = "data/column_store/raw_timestamp_encoded.dat";
+
+    Projection proj = Projection(this->block_size);
+
+    position_file_name = "data/column_store/temp/max_temp.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city == 0 ? "Changi" : "Paya Lebar", "Max Temperature", max_temp);
+
+    position_file_name = "data/column_store/temp/min_temp.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city == 0 ? "Changi" : "Paya Lebar", "Min Temperature", min_temp);
+
+    position_file_name = "data/column_store/temp/max_humid.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city == 0 ? "Changi" : "Paya Lebar", "Max Humidity", max_humid);
+
+    position_file_name = "data/column_store/temp/min_humid.dat";
+    proj.save_result(position_file_name, output_file, proj_file, city == 0 ? "Changi" : "Paya Lebar", "Min Humidity", min_temp);
+
+    output_file.close();
+
+    std::cout << "Done\n";
 }

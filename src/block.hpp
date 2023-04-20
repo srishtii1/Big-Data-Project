@@ -49,7 +49,7 @@ public:
     unsigned long long num_elements;
     Block();
     Block(int block_size);
-    bool read_data(std::ifstream &fin, int target_pos, bool verbose);
+    bool read_data(std::ifstream &fin, int target_pos, bool verbose=false);
     void print_value(T ele);
     void push_data(T ele, int index);
     void write_data(std::ofstream &fout, int num_elements);
@@ -176,15 +176,12 @@ inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
     int start_block_num = target_pos / this->num_elements;
     int start_of_block = start_block_num * (this->num_elements * sizeof(T));
     int block_offset = target_pos % this->num_elements;
-    // int block_offset = (bytes_offset % this->block_size) / sizeof(T);
-    // int start_of_block = (bytes_offset / this->block_size) * this->block_size; // so that we can seek to that number of bytes
 
     if (start_of_block == this->curr_start_of_block) // block contnains target position
     {
-        // std::cout << "Current block already contains target position.\n";
         return false;
     }
-    // std::cout << "Reading Block\n";
+
     this->curr_start_of_block = start_of_block;
 
     unsigned long long size;
@@ -215,9 +212,6 @@ inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
 
     fin.read(reinterpret_cast<char *>(this->block_data.data()), num_elements * sizeof(T));
 
-    // if (verbose)
-    //     this->print_value(this->block_data.at(block_offset));
-
     this->start_position = start_block_num * this->num_elements;
     this->end_position = start_position + this->block_data.size();
     return true;
@@ -235,9 +229,6 @@ inline bool Block<T>::read_data(std::ifstream &fin, int target_pos, bool verbose
 template <>
 inline bool Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verbose)
 {
-    // int bytes_offset = target_pos / 8; // starting byte number
-    // int block_offset = target_pos % (this->block_size * 8);
-    // int start_of_block = (bytes_offset / this->block_size) * this->block_size;
 
     int start_block_num = target_pos / this->num_elements;
     int start_of_block = start_block_num * (this->block_size);
@@ -245,7 +236,6 @@ inline bool Block<bool>::read_data(std::ifstream &fin, int target_pos, bool verb
 
     if (start_of_block == this->curr_start_of_block) // Current Block already contains target position
     {
-        // std::cout << "Current block already contains target position.\n";
         return false;
     }
     else
@@ -315,8 +305,6 @@ template <typename T>
 inline void Block<T>::push_data(T ele, int index)
 {
     this->block_data.at(index) = ele;
-    // this->print_data();
-    // std::cout << index << " " << ele << '\n';
 }
 
 /**
