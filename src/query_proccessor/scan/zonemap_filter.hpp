@@ -47,7 +47,6 @@ ZonemapFilter<T>::ZonemapFilter(std::string position_input_file_name, std::strin
         bool status = zone_block.read_next_block(this->zonemap_file);
         if (!status)
         {
-            std::cout<<"Error reading zonemap file"<<std::endl;
             break;
         }
         for (int i = 0; i < zone_block.get_data().size(); i++)
